@@ -2,6 +2,11 @@
 
 아스트랄파티 글로벌 Steam INT판의 참가자 통계를 표시하는 독립 BepInEx 플러그인입니다.
 
+<img width="1919" height="1078" alt="Image" src="https://github.com/user-attachments/assets/f4bd2c9d-90cd-433f-98df-1139ae4110ff" />
+<img width="1919" height="1079" alt="Image" src="https://github.com/user-attachments/assets/7951e158-6e35-44fe-a4be-9959d9557e39" />
+<img width="969" height="417" alt="Image" src="https://github.com/user-attachments/assets/ab56be98-7473-4bb7-9cc8-b42e9ec388b4" />
+<img width="661" height="171" alt="Image" src="https://github.com/user-attachments/assets/c45acbf1-9180-41cf-acc2-6a9e18d05bf5" />
+
 ```text
 승률: 88.26% (203/230) · 좋아요: 218.6 (656)
 매너: 100
