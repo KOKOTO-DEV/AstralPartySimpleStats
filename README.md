@@ -2,11 +2,6 @@
 
 아스트랄파티 글로벌 Steam INT판의 참가자 통계를 표시하는 독립 BepInEx 플러그인입니다.
 
-<img width="1919" height="1078" alt="Image" src="https://github.com/user-attachments/assets/f4bd2c9d-90cd-433f-98df-1139ae4110ff" />
-<img width="1919" height="1079" alt="Image" src="https://github.com/user-attachments/assets/7951e158-6e35-44fe-a4be-9959d9557e39" />
-<img width="969" height="417" alt="Image" src="https://github.com/user-attachments/assets/ab56be98-7473-4bb7-9cc8-b42e9ec388b4" />
-<img width="661" height="171" alt="Image" src="https://github.com/user-attachments/assets/c45acbf1-9180-41cf-acc2-6a9e18d05bf5" />
-
 ```text
 승률: 88.26% (203/230) · 좋아요: 218.6 (656)
 매너: 100
@@ -21,10 +16,29 @@
 글자는 왼쪽 정렬이며, 상자 오른쪽 끝을 고정하고 내용 길이에 따라 왼쪽으로 확장합니다.
 대기실은 말풍선 버튼을 피하는 오른쪽 여백을 유지하고, 캐릭터 선택창은 카드 왼쪽 끝에 맞춰 오른쪽으로 확장합니다.
 
+
+<img width="1919" height="1078" alt="Image" src="https://github.com/user-attachments/assets/f4bd2c9d-90cd-433f-98df-1139ae4110ff" />
+대기실에서 표시
+
+
+<img width="1919" height="1079" alt="Image" src="https://github.com/user-attachments/assets/7951e158-6e35-44fe-a4be-9959d9557e39" />
+캐릭터 선택창에서 표시
+
+
+
 게임의 기존 프로필 요청으로 한 번에 한 명씩 최소 2초 간격으로 자동 조회하며 60초 동안 재사용합니다.
 프로필 창은 열지 않고, 수동 프로필 창이 열려 있으면 새 요청을 멈춥니다.
 요청 객체별로 응답을 구분해서 자동 조회가 수동 프로필 창 데이터를 덮어쓰지 않습니다.
 통계 데이터는 별도 채팅 서버로 전송하지 않습니다.
+
+
+<img width="969" height="417" alt="Image" src="https://github.com/user-attachments/assets/ab56be98-7473-4bb7-9cc8-b42e9ec388b4" />
+매너점수가 100점이 아닌 경우도 제대로 표시합니다.
+
+
+<img width="661" height="171" alt="Image" src="https://github.com/user-attachments/assets/c45acbf1-9180-41cf-acc2-6a9e18d05bf5" />
+확인 불가로 나오는 경우는 잠시만 기다려주세요.
+
 
 ## 설치
 
