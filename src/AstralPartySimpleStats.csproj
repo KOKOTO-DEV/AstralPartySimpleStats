@@ -1,0 +1,72 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <AstralPluginProject>true</AstralPluginProject>
+    <AssemblyName>AstralPartySimpleStats</AssemblyName>
+    <RootNamespace>AstralPartySimpleStats</RootNamespace>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <Target Name="BuildProfileBridge" BeforeTargets="PrepareForBuild">
+    <MSBuild Projects="../bridge/ProfileBridge.csproj" Targets="Restore;Build"
+             Properties="Configuration=$(Configuration);AstralRuntimeRefs=$(AstralRuntimeRefs)" />
+  </Target>
+  <ItemGroup>
+    <EmbeddedResource Include="../bridge/bin/$(Configuration)/netstandard2.1/AstralPartySimpleStats.ProfileBridge.dll"
+                      LogicalName="AstralPartySimpleStats.ProfileBridge.dll" />
+  </ItemGroup>
+
+
+  <ItemGroup>
+    <Reference Include="Il2CppInterop.Runtime">
+      <HintPath>$(AstralBepInExRoot)/core/Il2CppInterop.Runtime.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Il2Cppmscorlib">
+      <HintPath>$(AstralBepInExRoot)/interop/Il2Cppmscorlib.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="BepInEx.Core">
+      <HintPath>$(AstralBepInExRoot)/core/BepInEx.Core.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="BepInEx.Unity.IL2CPP">
+      <HintPath>$(AstralBepInExRoot)/core/BepInEx.Unity.IL2CPP.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="0Harmony">
+      <HintPath>$(AstralBepInExRoot)/core/0Harmony.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>$(AstralBepInExRoot)/interop/UnityEngine.CoreModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.TextRenderingModule">
+      <HintPath>$(AstralBepInExRoot)/interop/UnityEngine.TextRenderingModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.InputLegacyModule">
+      <HintPath>$(AstralBepInExRoot)/interop/UnityEngine.InputLegacyModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.IMGUIModule">
+      <HintPath>$(AstralBepInExRoot)/interop/UnityEngine.IMGUIModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.ImageConversionModule">
+      <HintPath>$(AstralBepInExRoot)/interop/UnityEngine.ImageConversionModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.UIModule">
+      <HintPath>$(AstralBepInExRoot)/interop/UnityEngine.UIModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.UI">
+      <HintPath>$(AstralBepInExRoot)/interop/UnityEngine.UI.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+</Project>

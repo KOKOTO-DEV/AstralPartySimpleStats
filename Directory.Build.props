@@ -1,0 +1,11 @@
+<Project>
+  <PropertyGroup>
+    <AstralRepositoryRoot>$(MSBuildThisFileDirectory)</AstralRepositoryRoot>
+    <AstralRuntimeRefs Condition="'$(AstralRuntimeRefs)' == ''">$(AstralRepositoryRoot).work/runtime-refs</AstralRuntimeRefs>
+    <AstralGameRoot Condition="'$(AstralGameRoot)' == ''">C:\Program Files (x86)\Steam\steamapps\common\Astral Party\8vJXnINT</AstralGameRoot>
+    <AstralLocalRefsRoot>$(AstralRepositoryRoot).work/refs</AstralLocalRefsRoot>
+    <AstralBepInExRoot Condition="'$(AstralRefsRoot)' != ''">$(AstralRefsRoot)</AstralBepInExRoot>
+    <AstralBepInExRoot Condition="'$(AstralBepInExRoot)' == '' and Exists('$(AstralLocalRefsRoot)/core/BepInEx.Core.dll')">$(AstralLocalRefsRoot)</AstralBepInExRoot>
+    <AstralBepInExRoot Condition="'$(AstralBepInExRoot)' == ''">$(AstralGameRoot)/BepInEx</AstralBepInExRoot>
+  </PropertyGroup>
+</Project>

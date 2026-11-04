@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <AssemblyName>AstralPartySimpleStats.ProfileBridge</AssemblyName>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <AstralRuntimeRefs Condition="'$(AstralRuntimeRefs)' == ''">$(MSBuildThisFileDirectory)../.work/runtime-refs</AstralRuntimeRefs>
+  </PropertyGroup>
+  <Target Name="ValidateRuntimeReferences" BeforeTargets="ResolveReferences">
+    <Error Condition="!Exists('$(AstralRuntimeRefs)/AstralParty.Runtime.dll')" Text="Supply raw HybridCLR runtime DLLs with -p:AstralRuntimeRefs=PATH; BepInEx interop wrappers cannot build ProfileBridge." />
+  </Target>
+  <ItemGroup>
+    <Reference Include="AstralParty.Runtime"><HintPath>$(AstralRuntimeRefs)/AstralParty.Runtime.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.CoreModule"><HintPath>$(AstralRuntimeRefs)/UnityEngine.CoreModule.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UniTask"><HintPath>$(AstralRuntimeRefs)/UniTask.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Google.Protobuf.Runtime"><HintPath>$(AstralRuntimeRefs)/Google.Protobuf.Runtime.dll</HintPath><Private>false</Private></Reference>
+  </ItemGroup>
+</Project>
