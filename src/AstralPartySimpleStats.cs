@@ -45,6 +45,7 @@ public sealed class Plugin : BasePlugin
         if (plugin == null || plugin._frame == Time.frameCount) return;
         plugin._frame = Time.frameCount;
         StatsRuntime.ShowPlayerDetails = plugin._enabled?.Value ?? true;
+        StatsRuntime.HandleRecentInput();
         StatsRuntime.Tick();
     }
 

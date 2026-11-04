@@ -9,11 +9,13 @@ namespace party.protocol
 {
     public class GetShowPlayerC2S { public long PlayerId; }
     public class ShowPlayerStatistics { public int FightCount, WinFightCount; }
-    public class ShowPlayer { public long PlayerId; public bool IsShowData; public int PraiseNum; public ShowPlayerStatistics? Statistics; }
+    public class ShowPlayerShortFight { public long Time; public int Rank,HeroId,Index,MapType; }
+    public class ShowPlayer { public long PlayerId; public bool IsShowData,IsShowFight; public int PraiseNum; public ShowPlayerStatistics? Statistics; public List<ShowPlayerShortFight> Record = new(); }
     public class GetShowPlayerS2C { public ShowPlayer ShowData = new(); }
 }
 namespace GameLogic
 {
+    public static class BattleConfig { public static bool IsPVE(int map) => map==2; }
     public class PlayerCareer { public long Id; }
     public class AccountLogic
     {
@@ -24,6 +26,7 @@ namespace GameLogic
     }
     public class GameLogicManager { public AccountLogic account = new(); }
 }
+public static class CharacterHandle { public static string GetCharacterNickName(int id) => "캐릭터"+id; public static string GetCharacterName(int id)=>"이름"+id; }
 namespace UI
 {
     public class AccountInfoWindow { public bool isShowing; }

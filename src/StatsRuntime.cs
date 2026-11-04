@@ -22,7 +22,12 @@ internal static partial class StatsRuntime
     }
     private sealed class ScreenState { public string ScreenPhase = string.Empty; }
 
-    public static void Initialize(ManualLogSource log) => _log = log;
+    public static void Initialize(ManualLogSource log)
+    {
+        _log=log;
+        _manualHidden=PlayerPrefs.GetInt("AstralPartySimpleStats.InfoHidden",0)!=0;
+        _useCharacterNames=PlayerPrefs.GetInt("AstralPartySimpleStats.CharacterNames",1)!=0;
+    }
 
     public static void Tick()
     {
@@ -52,6 +57,7 @@ internal static partial class StatsRuntime
                 }
             }
             RefreshPlayerDetails();
+            RefreshVisibilityToggle();
         }
         catch (Exception ex)
         {
@@ -71,6 +77,7 @@ internal static partial class StatsRuntime
     public static void Shutdown()
     {
         ClearPlayerDetails();
+        DisposeVisibilityToggle();
         try { ProfileQuery.Shutdown(); } catch (Exception ex) { _log?.LogWarning(ex.Message); }
         FguiNode.ShutdownResources();
         FairyGui.Clear(); NativeData.Clear(); Warnings.Clear();

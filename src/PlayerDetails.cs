@@ -3,7 +3,8 @@ using System;
 namespace AstralPartySimpleStats;
 
 internal readonly record struct PlayerDetails(long PlayerId, bool? StatisticsPublic, bool? HistoryPublic, int? CreditScore,
-    int? WinCount = null, int? PlayCount = null, int? PraiseCount = null)
+    int? WinCount = null, int? PlayCount = null, int? PraiseCount = null,
+    RecentHistory? Recent = null)
 {
     private static readonly System.Globalization.CultureInfo Culture = System.Globalization.CultureInfo.InvariantCulture;
     public string Caption => "승률: " + WinRate + " · 좋아요: " + Likes
@@ -20,14 +21,15 @@ internal readonly record struct PlayerDetails(long PlayerId, bool? StatisticsPub
     public PlayerDetails WithProfile(string payload)
     {
         var parts = payload.Split('|');
-        if (parts.Length != 5 || !long.TryParse(parts[0], out var id) || id != PlayerId
+        if (parts.Length is not (5 or 7) || !long.TryParse(parts[0], out var id) || id != PlayerId
             || parts[1] is not ("0" or "1")) return this;
         int? wins = int.TryParse(parts[2], out var w) && w >= 0 ? w : null;
         int? games = int.TryParse(parts[3], out var p) && p >= 0 ? p : null;
         int? likes = int.TryParse(parts[4], out var l) && l >= 0 ? l : null;
         var visible = parts[1] == "1";
         if (!visible || !wins.HasValue || !games.HasValue || wins > games) { wins = null; games = null; }
-        return this with { StatisticsPublic = visible, WinCount = wins, PlayCount = games, PraiseCount = likes };
+        var recent = parts.Length == 7 ? RecentHistory.Parse(parts[5], parts[6]) : null;
+        return this with { StatisticsPublic = visible, WinCount = wins, PlayCount = games, PraiseCount = likes, Recent = recent };
     }
 }
 

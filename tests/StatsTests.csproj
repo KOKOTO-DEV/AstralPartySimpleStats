@@ -2,6 +2,6 @@
  <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net6.0</TargetFramework><Nullable>enable</Nullable><ImplicitUsings>enable</ImplicitUsings></PropertyGroup>
  <ItemGroup>
   <Compile Remove="profile-bridge/**/*.cs" />
-  <Compile Include="../src/PlayerDetails.cs" /><Compile Include="../src/PlayerDetailTargets.cs" /><Compile Include="../src/IGameDataAccess.cs" />
+  <Compile Include="../src/PlayerDetails.cs" /><Compile Include="../src/RecentHistory.cs" /><Compile Include="../src/PlayerDetailTargets.cs" /><Compile Include="../src/IGameDataAccess.cs" />
  </ItemGroup>
 </Project>

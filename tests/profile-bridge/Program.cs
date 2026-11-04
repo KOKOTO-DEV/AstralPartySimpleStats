@@ -36,9 +36,9 @@ static class Program
     }
     private static void Main()
     {
-        var tests = new Action[] { OwnQuery, Throttle, ManualWindow, Isolation, PrivateStats, Failure, Reset };
+        var tests = new Action[] { OwnQuery, Throttle, ManualWindow, Isolation, PrivateStats, Failure, Reset, HistoryOrder };
         foreach (var test in tests) { Setup(); test(); Console.WriteLine("PASS bridge " + test.Method.Name); }
-        ProfileBridge.Stop(); Console.WriteLine("7/7 profile bridge regressions passed (mock game API).");
+        ProfileBridge.Stop(); Console.WriteLine("8/8 profile bridge regressions passed (mock game API).");
     }
     private static void OwnQuery()
     {
@@ -46,7 +46,7 @@ static class Program
         var request = RPCMsgManager.Requests.Single();
         Assert(request.Id == 0 && request.Command == 5153 && request.Type == ProtolcalType.RealTime);
         Reply(42, false); request.Result.keepWaiting = false;
-        Assert(ProfileBridge.Read(42) == "42|1|203|230|656");
+        Assert(ProfileBridge.Read(42).StartsWith("42|1|203|230|656|1|"));
         Assert(RPCMsgManager.Requests.Count == 1);
         Assert(Account.Current.Id == 0); // no automatic write to the game's career
     }
@@ -80,7 +80,7 @@ static class Program
     private static void PrivateStats()
     {
         ProfileBridge.Read(99); Reply(99, false); RPCMsgManager.Requests[0].Result.keepWaiting = false;
-        Assert(ProfileBridge.Read(99) == "99|0|?|?|656");
+        Assert(ProfileBridge.Read(99).StartsWith("99|0|?|?|656|0|"));
     }
     private static void Failure()
     {
@@ -88,6 +88,18 @@ static class Program
         ProfileBridge.Read(99); Reply(99, true, 9); RPCMsgManager.Requests[0].Result.keepWaiting = false;
         Time.unscaledTime = 5; Assert(ProfileBridge.Read(99) == "");
         Assert(ReferenceEquals(previous, Account.Current) && RPCMsgManager.Requests.Count == 1);
+    }
+    private static void HistoryOrder()
+    {
+        ProfileBridge.Read(99);
+        Rpc.StartReply(RPCMsgManager.Requests.Last().Result);
+        var data=new ShowPlayer {PlayerId=99,IsShowFight=true};
+        for(var i=0;i<12;i++) data.Record.Add(new ShowPlayerShortFight {Time=i,Index=i,MapType=i%2==0?2:1,HeroId=i,Rank=i%3==0?2:1});
+        Rpc.GetShowPlayerS2C.OnGetShowPlayerS2CServerCallBackAsync!(new GetShowPlayerS2C {ShowData=data},0,false);
+        Rpc.EndReply(); RPCMsgManager.Requests.Last().Result.keepWaiting=false;
+        var parts=ProfileBridge.Read(99).Split('|');
+        var rows=System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(parts[6])).Split('\n');
+        Assert(parts[5]=="1" && rows.Length==10 && rows[0]=="PvP\t승\t캐릭터11\t이름11" && rows[9]=="협동\t승\t캐릭터2\t이름2");
     }
     private static void Reset()
     {

@@ -20,28 +20,41 @@ internal static partial class StatsRuntime
         public readonly FguiNode Container;
         private readonly FguiNode _background;
         public readonly FguiNode Text;
+        public readonly FguiNode Left;
+        public readonly FguiNode Right;
+        public bool Expanded;
+        public bool CanExpand;
+        public long PlayerId;
+        public float HeaderHeight;
         public DetailLabel(IntPtr host)
         {
             Host = FguiNode.Retain(host);
             try
             {
                 Container = FguiNode.Component(380, 48);
-                Container.SetTouchable(false);
+                Container.SetTouchable(true);
+                Container.SetOpaque(true);
                 Container.SetSortingOrder(10);
                 _background = FguiNode.Graph(380, 48);
-                _background.SetTouchable(false);
+                _background.SetTouchable(true);
                 _background.Fill(new Color32(20, 24, 32, 225), 4);
                 Container.AddChild(_background);
                 Text = FguiNode.Text(368, 44);
-                Text.SetTouchable(false);
+                Text.SetTouchable(true);
                 Text.SetXY(6, 2);
                 Container.AddChild(Text);
+                Left = FguiNode.Text(200,140);
+                Right = FguiNode.Text(200,140);
+                Container.AddChild(Left); Container.AddChild(Right);
+                Left.SetVisible(false); Right.SetVisible(false);
                 Host.AddChild(Container);
             }
             catch
             {
                 // Children can fail before attachment; dispose all owned nodes.
                 try { Text?.Dispose(); } catch { }
+                try { Left?.Dispose(); } catch { }
+                try { Right?.Dispose(); } catch { }
                 try { _background?.Dispose(); } catch { }
                 try { Container?.Dispose(); } catch { }
                 Host.ReleaseHandle();
@@ -54,6 +67,7 @@ internal static partial class StatsRuntime
             finally
             {
                 Text.ReleaseHandle();
+                Left.ReleaseHandle(); Right.ReleaseHandle();
                 _background.ReleaseHandle();
                 Host.ReleaseHandle();
             }
@@ -61,6 +75,10 @@ internal static partial class StatsRuntime
 
         public void SetBounds(float x, float y, float width, float height)
         {
+            // Expanded details must cover later players' headers instead of
+            // competing with their identical sorting order and translucent fill.
+            Container.SetSortingOrder(Expanded ? 400 : 10);
+            _background.Fill(new Color32(20, 24, 32, Expanded ? (byte)255 : (byte)225), 4);
             Container.SetXY(x, y);
             Container.SetSize(width, height);
             _background.SetSize(width, height);
@@ -69,7 +87,7 @@ internal static partial class StatsRuntime
 
     private static void RefreshPlayerDetails()
     {
-        if (!ShowPlayerDetails || !_gameState.Available || !_gameState.InformationReady
+        if (!ShowPlayerDetails || _manualHidden || !_gameState.Available || !_gameState.InformationReady
             || _snapshot.ScreenPhase is not ("방" or "캐릭터 선택"))
         {
             ClearPlayerDetails();
@@ -146,12 +164,18 @@ internal static partial class StatsRuntime
             DetailLabels.Add(name, decoration);
         }
         found.Add(name);
+        if (decoration.PlayerId != details.PlayerId) decoration.Expanded = false;
+        decoration.PlayerId = details.PlayerId;
+        decoration.CanExpand = details.Recent?.Rows.Count > 0;
+        if (!decoration.CanExpand) decoration.Expanded = false;
         // Copy the game's nickname font, including its Korean font mapping.
         var format = FairyGui.Call(nameText, "get_textFormat");
         var font = IL2CPP.Il2CppStringToManaged(FairyGui.ReadObject(format, "font")) ?? string.Empty;
+        _uiFont = font;
         decoration.Text.SetTextStyle(font, 17, new Color32(245, 248, 255, 255),
             FguiAlign.Left, FguiVerticalAlign.Middle, false, FguiAutoSize.Both);
-        decoration.Text.SetText(details.Caption);
+        decoration.Text.SetText(details.Caption + "\n" + (details.Recent?.Summary ?? "최근: 확인 불가")
+            + (decoration.CanExpand ? (decoration.Expanded ? " ▴" : " ▾") : string.Empty));
         // Keep the text left-aligned, measure its actual glyph width, and grow
         // the box to the left of a fixed right edge beside the card's chat icon.
         // Its top slightly overlaps the card, matching the user's reference.
@@ -162,9 +186,23 @@ internal static partial class StatsRuntime
         var width = FairyGui.Get<float>(ui, "get_width");
         var height = FairyGui.Get<float>(ui, "get_height");
         var boxWidth = Math.Min(width, Math.Max(64, (float)Math.Ceiling(FairyGui.Get<float>(decoration.Text.Pointer, "get_textWidth")) + 12));
-        var boxHeight = Math.Max(48, (float)Math.Ceiling(FairyGui.Get<float>(decoration.Text.Pointer, "get_textHeight")) + 4);
+        var boxHeight = Math.Max(68, (float)Math.Ceiling(FairyGui.Get<float>(decoration.Text.Pointer, "get_textHeight")) + 4);
+        decoration.HeaderHeight = boxHeight;
+        decoration.Left.SetVisible(decoration.Expanded); decoration.Right.SetVisible(decoration.Expanded);
+        if (decoration.Expanded && details.Recent != null)
+        {
+            foreach (var column in new[] { decoration.Left, decoration.Right })
+                column.SetTextStyle(font,17,new Color32(245,248,255,255),FguiAlign.Left,FguiVerticalAlign.Top,false,FguiAutoSize.Both);
+            decoration.Left.SetText("최신순 1~5\n"+details.Recent.Column(0,_useCharacterNames));
+            decoration.Right.SetText("6~10\n"+details.Recent.Column(5,_useCharacterNames));
+            var leftWidth=FairyGui.Get<float>(decoration.Left.Pointer,"get_textWidth");
+            var rightWidth=FairyGui.Get<float>(decoration.Right.Pointer,"get_textWidth");
+            decoration.Left.SetXY(6,boxHeight+4); decoration.Right.SetXY(6+leftWidth+24,boxHeight+4);
+            boxWidth=Math.Min(width,Math.Max(boxWidth,leftWidth+rightWidth+36));
+            boxHeight+=Math.Max(FairyGui.Get<float>(decoration.Left.Pointer,"get_textHeight"),FairyGui.Get<float>(decoration.Right.Pointer,"get_textHeight"))+8;
+        }
         decoration.SetBounds(Math.Clamp(selection ? position.x : position.x - boxWidth, 0, Math.Max(0, width - boxWidth)),
-            Math.Clamp(position.y - 12, 0, Math.Max(0, height - boxHeight)), boxWidth, boxHeight);
+            Math.Clamp(position.y - 52, 0, Math.Max(0, height - boxHeight)), boxWidth, boxHeight);
         decoration.Container.SetVisible(true);
     }
 
@@ -176,5 +214,53 @@ internal static partial class StatsRuntime
         _detailsRoom = string.Empty;
         _detailsSummary = string.Empty;
         _nextDetailsAt = 0;
+    }
+
+    public static void HandleRecentInput()
+    {
+        if (!Input.GetMouseButtonDown(0)) return;
+        try
+        {
+            var root=FguiNode.Root;
+            if (root==null) return;
+            if (_toggle != null && !_toggle.IsDisposed && FairyGui.Get<bool>(_toggle.Pointer,"get_visible") &&
+                ContainsPointer(_toggle, out var toggleLocal))
+            {
+                if(toggleLocal.y>=28)
+                {
+                    _useCharacterNames=!_useCharacterNames;
+                    PlayerPrefs.SetInt("AstralPartySimpleStats.CharacterNames",_useCharacterNames?1:0);
+                }
+                else
+                {
+                    _manualHidden=!_manualHidden;
+                    PlayerPrefs.SetInt("AstralPartySimpleStats.InfoHidden",_manualHidden?1:0);
+                }
+                PlayerPrefs.Save();
+                _nextDetailsAt=0; _nextRead=0;
+                return;
+            }
+            DetailLabel? hit=null;
+            foreach(var label in DetailLabels.Values)
+            {
+                if(label.Expanded && !label.Container.IsDisposed && ContainsPointer(label.Container,out _)) {hit=label;break;}
+            }
+            foreach(var label in DetailLabels.Values)
+            {
+                if(hit!=null) break;
+                if(!label.Container.IsDisposed && ContainsPointer(label.Container,out _)) {hit=label;break;}
+            }
+            var toggle=false;
+            if(hit!=null && hit.CanExpand)
+            {
+                var mouse=Input.mousePosition;
+                var local=FairyGui.Unbox<Vector2>(FairyGui.Call(hit.Container.Pointer,"GlobalToLocal",FairyGui.Vector2Type,new Vector2(mouse.x,Screen.height-mouse.y)));
+                toggle=local.y>=hit.HeaderHeight-25 && local.y<=hit.HeaderHeight;
+            }
+            foreach(var label in DetailLabels.Values)
+                label.Expanded=label==hit ? (toggle ? !label.Expanded : label.Expanded) : false;
+            _nextDetailsAt=0; _nextRead=0;
+        }
+        catch(Exception ex) {LogRuntimeWarning("recent-input","Recent history input: "+ex.Message);}
     }
 }

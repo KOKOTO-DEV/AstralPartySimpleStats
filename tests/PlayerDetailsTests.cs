@@ -17,7 +17,9 @@ internal static class PlayerDetailsTests
         Case("Requested win-rate and likes caption uses real values and truncates likes", NumericCaption),
         Case("A profile reply for another account cannot replace participant statistics", WrongProfile),
         Case("Private statistics remain private while public likes remain visible", PrivateProfile),
-        Case("Zero games avoids division by zero and missing likes remain unknown", ZeroGames)
+        Case("Zero games avoids division by zero and missing likes remain unknown", ZeroGames),
+        Case("Mixed-mode recent history keeps order and five-row columns", RecentColumns),
+        Case("Private and malformed recent history do not expose records", RecentPrivacy)
     };
     private static (string, Func<Task>) Case(string name, Action action) =>
         (name, () => { action(); return Task.CompletedTask; });
@@ -113,6 +115,25 @@ internal static class PlayerDetailsTests
         var d = new PlayerDetails(42, null, null, 100).WithProfile("42|1|0|0|?");
         Assert(d.Caption == "승률: — (0/0) · 좋아요: 확인 불가\n매너: 100");
         Assert(new PlayerDetails(42, null, null, 100).WithProfile("42|1|300|230|656").WinCount == null);
+    }
+    private static void RecentColumns()
+    {
+        var rows=Enumerable.Range(0,10).Select(i=>(i%2==0?"협동":"PvP")+"\t"+(i==5?"패":"승")+"\t캐릭터"+i);
+        var payload=Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(string.Join("\n",rows)));
+        var recent=RecentHistory.Parse("1",payload)!;
+        Assert(recent.Summary=="최근: 승승승승승패승승승승 (9/10)");
+        Assert(recent.Column(0).Split('\n').Length==5 && recent.Column(5).StartsWith("06. PvP 패 캐릭터5"));
+        Assert(new PlayerDetails(42,null,null,100).WithProfile("42|1|203|230|656|1|"+payload).Recent?.Rows.Count==10);
+        var named=RecentHistory.Parse("1",Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes("협동\t승\t운명의 소녀\t카이세이")))!;
+        Assert(named.Column(0,false)=="01. 협동 승 운명의 소녀");
+        Assert(named.Column(0,true)=="01. 협동 승 카이세이");
+    }
+    private static void RecentPrivacy()
+    {
+        Assert(RecentHistory.Parse("0","not-base64")!.Rows.Count==0);
+        Assert(RecentHistory.Parse("0","")!.Summary=="최근: 비공개");
+        Assert(RecentHistory.Parse("1","invalid")==null);
+        Assert(RecentHistory.Parse("1","")!.Summary=="최근: 기록 없음");
     }
     private sealed class Data : IGameDataAccess
     {

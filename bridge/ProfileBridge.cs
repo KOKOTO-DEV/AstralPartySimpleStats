@@ -22,6 +22,8 @@ public static class ProfileBridge
         public int? Wins, Games;
         public int Likes;
         public float At;
+        public bool HistoryPublic;
+        public string Recent = string.Empty;
     }
     private static readonly Dictionary<long, Entry> Cache = new Dictionary<long, Entry>();
     private static readonly Dictionary<long, float> RetryAt = new Dictionary<long, float>();
@@ -75,7 +77,9 @@ public static class ProfileBridge
                     Id = data.PlayerId, Public = visible,
                     Wins = visible && stats != null ? (int?)stats.WinFightCount : null,
                     Games = visible && stats != null ? (int?)stats.FightCount : null,
-                    Likes = data.PraiseNum, At = Time.unscaledTime
+                    Likes = data.PraiseNum, At = Time.unscaledTime,
+                    HistoryPublic = data.PlayerId == _accountId || data.IsShowFight,
+                    Recent = BuildRecent(data, data.PlayerId == _accountId || data.IsShowFight)
                 };
             }
         }
@@ -103,7 +107,8 @@ public static class ProfileBridge
         if (Cache.TryGetValue(id, out var entry) && now - entry.At < 60f)
             return string.Join("|", entry.Id.ToString(CultureInfo.InvariantCulture), entry.Public ? "1" : "0",
                 entry.Wins?.ToString(CultureInfo.InvariantCulture) ?? "?",
-                entry.Games?.ToString(CultureInfo.InvariantCulture) ?? "?", entry.Likes.ToString(CultureInfo.InvariantCulture));
+                entry.Games?.ToString(CultureInfo.InvariantCulture) ?? "?", entry.Likes.ToString(CultureInfo.InvariantCulture))
+                + "|" + (entry.HistoryPublic ? "1" : "0") + "|" + Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(entry.Recent));
         // Pause automatic requests around manual profile UI; no windows are opened.
         var window = SimpleSingletonProvider<UI.UIManager>.inst?.AccountInfo;
         if (_pending != null || now < _nextSend || (window != null && window.isShowing)
@@ -136,5 +141,27 @@ public static class ProfileBridge
         _rpc = null; _account = null; _original = null;
         _pending = null; _pendingId = 0; _accountId = 0; _nextSend = 0;
         Cache.Clear(); RetryAt.Clear();
+    }
+
+    private static string BuildRecent(ShowPlayer data, bool visible)
+    {
+        if (!visible) return string.Empty;
+        var records = new List<ShowPlayerShortFight>(data.Record);
+        records.Sort((a,b) => { var time = b.Time.CompareTo(a.Time); return time != 0 ? time : b.Index.CompareTo(a.Index); });
+        var lines = new List<string>();
+        for (var i = 0; i < Math.Min(10, records.Count); i++)
+        {
+            var r = records[i];
+            string name;
+            try { name = r.HeroId == 0 ? "미상" : CharacterHandle.GetCharacterNickName(r.HeroId); }
+            catch { name = "캐릭터 " + r.HeroId.ToString(CultureInfo.InvariantCulture); }
+            name = (name ?? "미상").Replace('\t',' ').Replace('\n',' ').Replace('\r',' ');
+            string realName;
+            try { realName = r.HeroId == 0 ? "미상" : CharacterHandle.GetCharacterName(r.HeroId); }
+            catch { realName = name; }
+            realName=(realName??name).Replace('\t',' ').Replace('\n',' ').Replace('\r',' ');
+            lines.Add((BattleConfig.IsPVE(r.MapType) ? "협동" : "PvP") + "\t" + (r.Rank == 1 ? "승" : "패") + "\t" + name + "\t" + realName);
+        }
+        return string.Join("\n", lines);
     }
 }
