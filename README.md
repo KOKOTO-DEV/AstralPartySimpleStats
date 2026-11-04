@@ -1,63 +1,66 @@
-# AstralPartySimpleStats 0.1.0
-
-아스트랄파티 글로벌 Steam INT판의 참가자 통계를 표시하는 독립 BepInEx 플러그인입니다.
+# AstralPartySimpleStats 0.1.0<br />
+<br />
+아스트랄파티 글로벌 Steam INT판의 참가자 통계를 표시하는 독립 BepInEx 플러그인입니다.<br />
+<br />
 
 ```text
 승률: 88.26% (203/230) · 좋아요: 218.6 (656)
 매너: 100
 ```
 
-- 승률: 총 승리/총 플레이 × 100, 소수 둘째 자리 반올림
-- 좋아요: 전체 좋아요 ÷ 3을 소수 첫째 자리에서 버림, 괄호 안은 전체 좋아요
-- 매너: 방 참가자 CreditInfo의 차감점수를 100에서 뺀 값, 범위 0~100
-- 비공개 통계는 `비공개`, 전달되지 않은 정보는 `확인 불가`
-
-대기실·캐릭터 선택 화면의 프로필 카드 상단에 살짝 겹쳐 표시합니다.
-글자는 왼쪽 정렬이며, 상자 오른쪽 끝을 고정하고 내용 길이에 따라 왼쪽으로 확장합니다.
-대기실은 말풍선 버튼을 피하는 오른쪽 여백을 유지하고, 캐릭터 선택창은 카드 왼쪽 끝에 맞춰 오른쪽으로 확장합니다.
-
-
-<img width="1919" height="1078" alt="Image" src="https://github.com/user-attachments/assets/f4bd2c9d-90cd-433f-98df-1139ae4110ff" />
-대기실에서 표시
-
-
-<img width="1919" height="1079" alt="Image" src="https://github.com/user-attachments/assets/7951e158-6e35-44fe-a4be-9959d9557e39" />
-캐릭터 선택창에서 표시
-
-
-
-게임의 기존 프로필 요청으로 한 번에 한 명씩 최소 2초 간격으로 자동 조회하며 60초 동안 재사용합니다.
-프로필 창은 열지 않고, 수동 프로필 창이 열려 있으면 새 요청을 멈춥니다.
-요청 객체별로 응답을 구분해서 자동 조회가 수동 프로필 창 데이터를 덮어쓰지 않습니다.
-통계 데이터는 별도 채팅 서버로 전송하지 않습니다.
-
-
-<img width="969" height="417" alt="Image" src="https://github.com/user-attachments/assets/ab56be98-7473-4bb7-9cc8-b42e9ec388b4" />
-매너점수가 100점이 아닌 경우도 제대로 표시합니다.
-
-
-<img width="661" height="171" alt="Image" src="https://github.com/user-attachments/assets/c45acbf1-9180-41cf-acc2-6a9e18d05bf5" />
-확인 불가로 나오는 경우는 잠시만 기다려주세요.
-
-
-## 설치
-
-Windows x64 글로벌 Steam INT판과 BepInEx 6 Unity IL2CPP가 필요합니다.
-게임 종료 후 배포 ZIP의 `BepInEx` 폴더를 INT 게임 폴더에 합칩니다.
-
+<br />
+- 승률: 총 승리/총 플레이 × 100, 소수 둘째 자리 반올림<br />
+- 좋아요: 전체 좋아요 ÷ 3을 소수 첫째 자리에서 버림, 괄호 안은 전체 좋아요<br />
+- 매너: 방 참가자 CreditInfo의 차감점수를 100에서 뺀 값, 범위 0~100<br />
+- 비공개 통계는 `비공개`, 전달되지 않은 정보는 `확인 불가`<br />
+<br />
+대기실·캐릭터 선택 화면의 프로필 카드 상단에 살짝 겹쳐 표시합니다.<br />
+글자는 왼쪽 정렬이며, 상자 오른쪽 끝을 고정하고 내용 길이에 따라 왼쪽으로 확장합니다.<br />
+대기실은 말풍선 버튼을 피하는 오른쪽 여백을 유지하고, 캐릭터 선택창은 카드 왼쪽 끝에 맞춰 오른쪽으로 확장합니다.<br />
+<br />
+<br />
+<img width="1919" height="1078" alt="Image" src="https://github.com/user-attachments/assets/f4bd2c9d-90cd-433f-98df-1139ae4110ff" /><br />
+대기실에서 표시<br />
+<br />
+<br />
+<img width="1919" height="1079" alt="Image" src="https://github.com/user-attachments/assets/7951e158-6e35-44fe-a4be-9959d9557e39" /><br />
+캐릭터 선택창에서 표시<br />
+<br />
+<br />
+게임의 기존 프로필 요청으로 한 번에 한 명씩 최소 2초 간격으로 자동 조회하며 60초 동안 재사용합니다.<br />
+프로필 창은 열지 않고, 수동 프로필 창이 열려 있으면 새 요청을 멈춥니다.<br />
+요청 객체별로 응답을 구분해서 자동 조회가 수동 프로필 창 데이터를 덮어쓰지 않습니다.<br />
+통계 데이터는 별도 채팅 서버로 전송하지 않습니다.<br />
+<br />
+<br />
+<img width="969" height="417" alt="Image" src="https://github.com/user-attachments/assets/ab56be98-7473-4bb7-9cc8-b42e9ec388b4" /><br />
+매너점수가 100점이 아닌 경우도 제대로 표시합니다.<br />
+<br />
+<br />
+<img width="661" height="171" alt="Image" src="https://github.com/user-attachments/assets/c45acbf1-9180-41cf-acc2-6a9e18d05bf5" /><br />
+확인 불가로 나오는 경우는 잠시만 기다려주세요.<br />
+<br />
+<br />
+## 설치<br />
+<br />
+Windows x64 글로벌 Steam INT판과 BepInEx 6 Unity IL2CPP가 필요합니다.<br />
+게임 종료 후 배포 ZIP의 `BepInEx` 폴더를 INT 게임 폴더에 합칩니다.<br />
+<br />
 ```text
 8vJXnINT/BepInEx/plugins/AstralPartySimpleStats/AstralPartySimpleStats.dll
 ```
-
-설치 DLL은 하나이며 조회용 HybridCLR 브리지는 DLL 안에 내장되어 있습니다.
-
-## 설정과 제거
-
-첫 실행 후 `BepInEx/config/astral-party.simple-stats.cfg`가 생성됩니다.
-`[General] Enabled = false`로 표시와 새 자동 조회를 끌 수 있습니다.
-삭제하려면 게임 종료 후 `AstralPartySimpleStats` 폴더를 제거합니다.
-
-## 라이선스
-MIT. 
+<br />
+설치 DLL은 하나이며 조회용 HybridCLR 브리지는 DLL 안에 내장되어 있습니다.<br />
+<br />
+<br />
+## 설정과 제거<br />
+<br />
+첫 실행 후 `BepInEx/config/astral-party.simple-stats.cfg`가 생성됩니다.<br />
+`[General] Enabled = false`로 표시와 새 자동 조회를 끌 수 있습니다.<br />
+삭제하려면 게임 종료 후 `AstralPartySimpleStats` 폴더를 제거합니다.<br />
+<br />
+<br />
+## 라이선스<br />
+MIT. <br />
 원본 저작권 고지는 LICENSE에 유지했습니다. 배포물에는 게임 DLL을 포함하지 않습니다.
 
