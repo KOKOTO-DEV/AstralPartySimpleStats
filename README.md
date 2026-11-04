@@ -52,6 +52,7 @@
 Windows x64 글로벌 Steam INT판과 BepInEx 6 Unity IL2CPP가 필요합니다.<br />
 게임 종료 후 배포 ZIP의 `BepInEx` 폴더를 INT 게임 폴더에 합칩니다.<br />
 <br />
+
 ```text
 8vJXnINT/BepInEx/plugins/AstralPartySimpleStats/AstralPartySimpleStats.dll
 ```
