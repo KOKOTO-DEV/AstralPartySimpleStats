@@ -1,7 +1,6 @@
 # AstralPartySimpleStats 0.1.0
 
 아스트랄파티 글로벌 Steam INT판의 참가자 통계를 표시하는 독립 BepInEx 플러그인입니다.
-ChatPlugin 없이 사용할 수 있습니다.
 
 ```text
 승률: 88.26% (203/230) · 좋아요: 218.6 (656)
@@ -32,10 +31,6 @@ Windows x64 글로벌 Steam INT판과 BepInEx 6 Unity IL2CPP가 필요합니다.
 ```
 
 설치 DLL은 하나이며 조회용 HybridCLR 브리지는 DLL 안에 내장되어 있습니다.
-ChatPlugin은 선택 사항입니다. ChatPlugin 0.2.0 원본과 함께 쓸 수 있습니다.
-이 대화에서 만든 통계 통합판 ChatPlugin 0.2.1~0.2.5를 함께 쓰는 경우에는
-`astral-party.chat.cfg`의 `[PlayerDetails] Enabled = false`로 기존 표시를 꺼 주세요.
-통합판을 0.2.0 원본으로 복원해도 됩니다. 두 통계 기능을 동시에 켜지 마세요.
 
 ## 설정과 제거
 
@@ -43,27 +38,7 @@ ChatPlugin은 선택 사항입니다. ChatPlugin 0.2.0 원본과 함께 쓸 수 
 `[General] Enabled = false`로 표시와 새 자동 조회를 끌 수 있습니다.
 삭제하려면 게임 종료 후 `AstralPartySimpleStats` 폴더를 제거합니다.
 
-## 빌드와 검증
-
-.NET SDK 6.0.428과 초기화된 게임의 BepInEx 참조가 필요합니다.
-실제 게임 번들에서 추출한 raw HybridCLR DLL을 RuntimeRefs로 지정합니다.
-필수 파일은 AstralParty.Runtime.dll, UnityEngine.CoreModule.dll, UniTask.dll,
-Google.Protobuf.Runtime.dll입니다. BepInEx interop DLL과 다릅니다.
-
-```powershell
-./build.ps1 -GameRoot 'D:/SteamLibrary/steamapps/common/Astral Party/8vJXnINT' -RuntimeRefs '추출한 런타임 DLL 폴더'
-dotnet run --project tests/StatsTests.csproj -c Release
-dotnet run --project tests/profile-bridge/BridgeTests.csproj -c Release
-```
-
-출력은 `src/bin/Release/net6.0/AstralPartySimpleStats.dll`입니다.
-통계/슬롯 판독 14개와 조회 브리지 7개 테스트가 통과했습니다. 게임 API는 모의 데이터입니다.
-원래 통합판의 표시·조회는 사용자 스크린샷에서 확인했으며 독립판의 실게임 동작은 다음 실행에서 확인이 필요합니다.
-문제 진단은 `BepInEx/LogOutput.log`의 `AstralPartySimpleStats` 항목을 확인하세요.
-
 ## 라이선스
-
-MIT. [maynut02/astral-party-chat-plugin](https://github.com/maynut02/astral-party-chat-plugin)의
-커밋 687be4c3b3cfd5e07e75624fbba33eb9232aae2c와 로컬 통계 구현에서 분리했습니다.
+MIT. 
 원본 저작권 고지는 LICENSE에 유지했습니다. 배포물에는 게임 DLL을 포함하지 않습니다.
 
