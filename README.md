@@ -47,13 +47,13 @@
 대략 게임을 200판 했는데 좋아요 지수가 100도 안되면 복귀유저거나 아님 이상한 사람이거나 그렇겠죠.<br />
 <br />
 <br />
-<img width="1098" height="335" alt="Image" src="https://github.com/user-attachments/assets/c18b4567-b66f-4657-9c35-84c04e12de10" />
+<img width="1098" height="335" alt="Image" src="https://github.com/user-attachments/assets/c18b4567-b66f-4657-9c35-84c04e12de10" /><br />
 v0.2.1<br />
 상세보기의 협동 -> PvE로 변경
 상세보기의 PvP 패배의 경우 2위~4위로 표기합니다.
 <br />
 <br />
-<img width="829" height="342" alt="image" src="https://github.com/user-attachments/assets/a743e857-76c5-4ded-86c1-55e04400d3f6" />
+<img width="829" height="342" alt="image" src="https://github.com/user-attachments/assets/a743e857-76c5-4ded-86c1-55e04400d3f6" /><br />
 v0.2.0<br />
 유저정보 최근 10회 승패 표시가 나오게 추가 되었습니다.<br />
 상세보기 버튼을 누르면 최신순으로 모드, 승패, 사용캐릭터를 표시합니다.<br />
