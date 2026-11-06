@@ -160,7 +160,10 @@ public static class ProfileBridge
             try { realName = r.HeroId == 0 ? "미상" : CharacterHandle.GetCharacterName(r.HeroId); }
             catch { realName = name; }
             realName=(realName??name).Replace('\t',' ').Replace('\n',' ').Replace('\r',' ');
-            lines.Add((BattleConfig.IsPVE(r.MapType) ? "협동" : "PvP") + "\t" + (r.Rank == 1 ? "승" : "패") + "\t" + name + "\t" + realName);
+            var pve = BattleConfig.IsPVE(r.MapType);
+            var result = r.Rank == 1 ? "승" : !pve && r.Rank >= 2 && r.Rank <= 4
+                ? r.Rank.ToString(CultureInfo.InvariantCulture) + "위" : "패";
+            lines.Add((pve ? "PvE" : "PvP") + "\t" + result + "\t" + name + "\t" + realName);
         }
         return string.Join("\n", lines);
     }

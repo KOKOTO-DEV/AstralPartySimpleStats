@@ -19,7 +19,8 @@ internal static class PlayerDetailsTests
         Case("Private statistics remain private while public likes remain visible", PrivateProfile),
         Case("Zero games avoids division by zero and missing likes remain unknown", ZeroGames),
         Case("Mixed-mode recent history keeps order and five-row columns", RecentColumns),
-        Case("Private and malformed recent history do not expose records", RecentPrivacy)
+        Case("Private and malformed recent history do not expose records", RecentPrivacy),
+        Case("PvP placements render separately while summary retains losses", Placements)
     };
     private static (string, Func<Task>) Case(string name, Action action) =>
         (name, () => { action(); return Task.CompletedTask; });
@@ -118,15 +119,15 @@ internal static class PlayerDetailsTests
     }
     private static void RecentColumns()
     {
-        var rows=Enumerable.Range(0,10).Select(i=>(i%2==0?"협동":"PvP")+"\t"+(i==5?"패":"승")+"\t캐릭터"+i);
+        var rows=Enumerable.Range(0,10).Select(i=>(i%2==0?"PvE":"PvP")+"\t"+(i==5?"패":"승")+"\t캐릭터"+i);
         var payload=Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(string.Join("\n",rows)));
         var recent=RecentHistory.Parse("1",payload)!;
         Assert(recent.Summary=="최근: 승승승승승패승승승승 (9/10)");
         Assert(recent.Column(0).Split('\n').Length==5 && recent.Column(5).StartsWith("06. PvP 패 캐릭터5"));
         Assert(new PlayerDetails(42,null,null,100).WithProfile("42|1|203|230|656|1|"+payload).Recent?.Rows.Count==10);
-        var named=RecentHistory.Parse("1",Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes("협동\t승\t운명의 소녀\t카이세이")))!;
-        Assert(named.Column(0,false)=="01. 협동 승 운명의 소녀");
-        Assert(named.Column(0,true)=="01. 협동 승 카이세이");
+        var named=RecentHistory.Parse("1",Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes("PvE\t승\t운명의 소녀\t카이세이")))!;
+        Assert(named.Column(0,false)=="01. PvE 승 운명의 소녀");
+        Assert(named.Column(0,true)=="01. PvE 승 카이세이");
     }
     private static void RecentPrivacy()
     {
@@ -134,6 +135,15 @@ internal static class PlayerDetailsTests
         Assert(RecentHistory.Parse("0","")!.Summary=="최근: 비공개");
         Assert(RecentHistory.Parse("1","invalid")==null);
         Assert(RecentHistory.Parse("1","")!.Summary=="최근: 기록 없음");
+    }
+    private static void Placements()
+    {
+        var text="PvP\t승\t카이세이\nPvP\t2위\t페니\nPvP\t3위\t렌\nPvP\t4위\t파르낫\nPvE\t패\t알라나";
+        var recent=RecentHistory.Parse("1",Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(text)))!;
+        Assert(recent.Summary=="최근: 승패패패패 (1/5)");
+        Assert(recent.Column(0).Contains("02. PvP 2위 페니") && recent.Column(0).Contains("03. PvP 3위 렌") && recent.Column(0).Contains("04. PvP 4위 파르낫"));
+        Assert(recent.Column(0).Contains("05. PvE 패 알라나"));
+        Assert(RecentHistory.Parse("1",Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes("PvE\t2위\t렌")))==null);
     }
     private sealed class Data : IGameDataAccess
     {
@@ -160,3 +170,4 @@ internal static class PlayerDetailsTests
         public string InvokeString(IntPtr p, string m, bool arg) => throw new NotSupportedException();
     }
 }
+

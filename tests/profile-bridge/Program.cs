@@ -99,7 +99,8 @@ static class Program
         Rpc.EndReply(); RPCMsgManager.Requests.Last().Result.keepWaiting=false;
         var parts=ProfileBridge.Read(99).Split('|');
         var rows=System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(parts[6])).Split('\n');
-        Assert(parts[5]=="1" && rows.Length==10 && rows[0]=="PvP\t승\t캐릭터11\t이름11" && rows[9]=="협동\t승\t캐릭터2\t이름2");
+        Assert(parts[5]=="1" && rows.Length==10 && rows[0]=="PvP\t승\t캐릭터11\t이름11" && rows[9]=="PvE\t승\t캐릭터2\t이름2");
+        Assert(rows[2].StartsWith("PvP\t2위\t"));
     }
     private static void Reset()
     {
@@ -109,3 +110,4 @@ static class Program
         Reply(99, own: false); Assert(Account.Current.Id == 99);
     }
 }
+
