@@ -1,4 +1,4 @@
-# AstralPartySimpleStats 0.1.0<br />
+# AstralPartySimpleStats<br />
 <br />
 아스트랄파티 글로벌 Steam INT판의 참가자 통계를 표시하는 독립 BepInEx 플러그인입니다.<br />
 <br />
