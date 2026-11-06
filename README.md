@@ -49,8 +49,8 @@
 <br />
 <img width="1098" height="335" alt="Image" src="https://github.com/user-attachments/assets/c18b4567-b66f-4657-9c35-84c04e12de10" /><br />
 v0.2.1<br />
-상세보기의 협동 -> PvE로 변경
-상세보기의 PvP 패배의 경우 2위~4위로 표기합니다.
+상세보기의 협동 -> PvE로 변경<br />
+상세보기의 PvP 패배의 경우 2위~4위로 표기합니다.<br />
 <br />
 <br />
 <img width="829" height="342" alt="image" src="https://github.com/user-attachments/assets/a743e857-76c5-4ded-86c1-55e04400d3f6" /><br />
