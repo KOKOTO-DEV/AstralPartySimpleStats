@@ -56,6 +56,21 @@ internal static partial class StatsRuntime
                     _gameState.RoomId = id.ToString(System.Globalization.CultureInfo.InvariantCulture);
                 }
             }
+            if (!_gameState.Available || !ShowPlayerDetails) ProfileQuery.EndRoom();
+            else
+            {
+                var rows=PlayerDetailTargets.Find(_snapshot.ScreenPhase,ui,NativeData.ReadObject,
+                    n=>FairyGui.Get<int>(n,"get_numChildren"),(n,i)=>FairyGui.Call(n,"GetChildAt",FairyGui.Int,i));
+                var ids=new List<string>();
+                foreach(var row in rows)
+                {
+                    var player=NativeData.ReadObject(row,_snapshot.ScreenPhase=="방"?"playerInfo":"playerData");
+                    if(player==IntPtr.Zero || NativeData.InvokeBoolean(player,"get_IsBot")) continue;
+                    var id=NativeData.InvokeInt64(player,"get_Id");
+                    if(id>0) ids.Add(id.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                }
+                ProfileQuery.SyncParticipants(_gameState.RoomId,string.Join(",",ids));
+            }
             RefreshPlayerDetails();
             RefreshVisibilityToggle();
         }

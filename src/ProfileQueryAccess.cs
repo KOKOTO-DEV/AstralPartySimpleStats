@@ -10,11 +10,20 @@ internal sealed class ProfileQueryAccess
     private IntPtr _bridge;
     private bool _loadAttempted;
 
-    public string Read(long playerId)
+    public string Read(long playerId, string roomId)
+    {
+        LoadBridge();
+        if (_bridge == IntPtr.Zero || !long.TryParse(roomId, out var room) || room <= 0) return string.Empty;
+        FairyGui.CallStatic(_bridge,"BeginRoom","System.Int64",room);
+        var value = FairyGui.CallStatic(_bridge, "Read", "System.Int64", playerId);
+        return value == IntPtr.Zero ? string.Empty : Il2CppInterop.Runtime.IL2CPP.Il2CppStringToManaged(value) ?? string.Empty;
+    }
+
+    private void LoadBridge()
     {
         if (_bridge == IntPtr.Zero)
         {
-            if (_loadAttempted) return string.Empty;
+            if (_loadAttempted) return;
             _loadAttempted = true;
             using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("AstralPartySimpleStats.ProfileBridge.dll")
                 ?? throw new InvalidOperationException("Profile bridge resource is missing.");
@@ -26,8 +35,14 @@ internal sealed class ProfileQueryAccess
             _bridge = _metadata.FindClass("AstralPartySimpleStats.ProfileBridge", "AstralPartySimpleStats.RuntimeBridge", "ProfileBridge");
             if (_bridge == IntPtr.Zero) throw new TypeLoadException("HybridCLR profile bridge was not loaded.");
         }
-        var value = FairyGui.CallStatic(_bridge, "Read", "System.Int64", playerId);
-        return value == IntPtr.Zero ? string.Empty : Il2CppInterop.Runtime.IL2CPP.Il2CppStringToManaged(value) ?? string.Empty;
+    }
+
+    public void SyncParticipants(string roomId, string ids)
+    {
+        LoadBridge();
+        if (_bridge == IntPtr.Zero || !long.TryParse(roomId,out var room) || room<=0) return;
+        FairyGui.CallStatic(_bridge,"BeginRoom","System.Int64",room);
+        FairyGui.CallStaticObject(_bridge,"SetParticipants",FairyGui.String,FairyGui.InternString(ids));
     }
 
     public void Shutdown()
@@ -36,6 +51,23 @@ internal sealed class ProfileQueryAccess
         _metadata.Clear();
         _bridge = IntPtr.Zero;
         _loadAttempted = false;
+    }
+
+    public void EndRoom()
+    {
+        if (_bridge != IntPtr.Zero) FairyGui.CallStatic(_bridge,"BeginRoom","System.Int64",0L);
+    }
+    public int ActionState(long id)
+    {
+        if(_bridge==IntPtr.Zero) return -1;
+        var value=FairyGui.CallStatic(_bridge,"ActionState","System.Int64",id);
+        var text=value==IntPtr.Zero?string.Empty:Il2CppInterop.Runtime.IL2CPP.Il2CppStringToManaged(value);
+        return int.TryParse(text,out var state)?state:-1;
+    }
+    public void RequestAction(long id,string action)
+    {
+        if(_bridge!=IntPtr.Zero) FairyGui.CallStaticObject(_bridge,"RequestAction",FairyGui.String,
+            FairyGui.InternString(action+"|"+id.ToString(System.Globalization.CultureInfo.InvariantCulture)));
     }
 }
 

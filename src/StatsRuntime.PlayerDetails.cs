@@ -22,6 +22,9 @@ internal static partial class StatsRuntime
         public readonly FguiNode Text;
         public readonly FguiNode Left;
         public readonly FguiNode Right;
+        public readonly FguiNode FriendButton;
+        public readonly FguiNode BlockButton;
+        public int ActionState=-1;
         public bool Expanded;
         public bool CanExpand;
         public long PlayerId;
@@ -47,6 +50,10 @@ internal static partial class StatsRuntime
                 Right = FguiNode.Text(200,140);
                 Container.AddChild(Left); Container.AddChild(Right);
                 Left.SetVisible(false); Right.SetVisible(false);
+                FriendButton=FguiNode.Text(106,22); BlockButton=FguiNode.Text(106,22);
+                FriendButton.SetTouchable(true); BlockButton.SetTouchable(true);
+                Container.AddChild(FriendButton); Container.AddChild(BlockButton);
+                FriendButton.SetVisible(false); BlockButton.SetVisible(false);
                 Host.AddChild(Container);
             }
             catch
@@ -55,6 +62,8 @@ internal static partial class StatsRuntime
                 try { Text?.Dispose(); } catch { }
                 try { Left?.Dispose(); } catch { }
                 try { Right?.Dispose(); } catch { }
+                try { FriendButton?.Dispose(); } catch { }
+                try { BlockButton?.Dispose(); } catch { }
                 try { _background?.Dispose(); } catch { }
                 try { Container?.Dispose(); } catch { }
                 Host.ReleaseHandle();
@@ -68,6 +77,7 @@ internal static partial class StatsRuntime
             {
                 Text.ReleaseHandle();
                 Left.ReleaseHandle(); Right.ReleaseHandle();
+                FriendButton.ReleaseHandle(); BlockButton.ReleaseHandle();
                 _background.ReleaseHandle();
                 Host.ReleaseHandle();
             }
@@ -146,7 +156,7 @@ internal static partial class StatsRuntime
         if (name == IntPtr.Zero) return;
         var nameText = NativeData.ReadObject(name, "txt_PlayerName");
         if (nameText == IntPtr.Zero) return;
-        try { details = details.WithProfile(ProfileQuery.Read(details.PlayerId)); }
+        try { details = details.WithProfile(ProfileQuery.Read(details.PlayerId,_gameState.RoomId)); }
         catch (Exception ex)
         {
             LogRuntimeWarning("profile-query", "Automatic profile query unavailable: " + ex.GetType().Name + ": " + ex.Message);
@@ -176,6 +186,19 @@ internal static partial class StatsRuntime
             FguiAlign.Left, FguiVerticalAlign.Middle, false, FguiAutoSize.Both);
         decoration.Text.SetText(details.Caption + "\n" + (details.Recent?.Summary ?? "최근: 확인 불가")
             + (decoration.CanExpand ? (decoration.Expanded ? " ▴" : " ▾") : string.Empty));
+        try { decoration.ActionState=ProfileQuery.ActionState(details.PlayerId); }
+        catch(Exception ex) { decoration.ActionState=-1; LogRuntimeWarning("friend-state",ex.Message); }
+        var showActions=decoration.ActionState>=0 && (decoration.ActionState&1)==0;
+        decoration.FriendButton.SetVisible(showActions); decoration.BlockButton.SetVisible(showActions);
+        if(showActions)
+        {
+            decoration.FriendButton.SetTextStyle(font,15,new Color32(140,215,255,255),FguiAlign.Left,FguiVerticalAlign.Middle,true,FguiAutoSize.Shrink);
+            decoration.BlockButton.SetTextStyle(font,15,new Color32(255,180,180,255),FguiAlign.Left,FguiVerticalAlign.Middle,true,FguiAutoSize.Shrink);
+            decoration.FriendButton.SetText((decoration.ActionState&2)!=0?"[친구 등록됨]":"[친구 등록]");
+            decoration.BlockButton.SetText((decoration.ActionState&4)!=0?"[차단됨]":"[유저 차단]");
+            var actionY=2+FairyGui.Get<float>(decoration.Text.Pointer,"get_textHeight")/3;
+            decoration.FriendButton.SetXY(104,actionY); decoration.BlockButton.SetXY(218,actionY);
+        }
         // Keep the text left-aligned, measure its actual glyph width, and grow
         // the box to the left of a fixed right edge beside the card's chat icon.
         // Its top slightly overlaps the card, matching the user's reference.
@@ -186,6 +209,7 @@ internal static partial class StatsRuntime
         var width = FairyGui.Get<float>(ui, "get_width");
         var height = FairyGui.Get<float>(ui, "get_height");
         var boxWidth = Math.Min(width, Math.Max(64, (float)Math.Ceiling(FairyGui.Get<float>(decoration.Text.Pointer, "get_textWidth")) + 12));
+        if(showActions) boxWidth=Math.Max(boxWidth,330);
         var boxHeight = Math.Max(68, (float)Math.Ceiling(FairyGui.Get<float>(decoration.Text.Pointer, "get_textHeight")) + 4);
         decoration.HeaderHeight = boxHeight;
         decoration.Left.SetVisible(decoration.Expanded); decoration.Right.SetVisible(decoration.Expanded);
@@ -251,6 +275,19 @@ internal static partial class StatsRuntime
                 if(!label.Container.IsDisposed && ContainsPointer(label.Container,out _)) {hit=label;break;}
             }
             var toggle=false;
+            if(hit!=null && hit.ActionState>=0 && (hit.ActionState&1)==0)
+            {
+                if(ContainsPointer(hit.FriendButton,out _))
+                {
+                    if((hit.ActionState&6)==0) ProfileQuery.RequestAction(hit.PlayerId,"friend");
+                    _nextDetailsAt=0;_nextRead=0;return;
+                }
+                if(ContainsPointer(hit.BlockButton,out _))
+                {
+                    if((hit.ActionState&4)==0) ProfileQuery.RequestAction(hit.PlayerId,"block");
+                    _nextDetailsAt=0;_nextRead=0;return;
+                }
+            }
             if(hit!=null && hit.CanExpand)
             {
                 var mouse=Input.mousePosition;

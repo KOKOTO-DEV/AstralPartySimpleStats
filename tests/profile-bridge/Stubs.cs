@@ -24,7 +24,16 @@ namespace GameLogic
         public long GetPlayerID() => Id;
         public PlayerCareer Current => playerCareer;
     }
-    public class GameLogicManager { public AccountLogic account = new(); }
+    public class FriendLogic
+    {
+        public readonly HashSet<long> Friends=new(),Blocked=new();
+        public readonly List<long> FriendRequests=new(),BlockRequests=new();
+        public bool IsFriend(long id)=>Friends.Contains(id);
+        public bool IsBlack(long id)=>Blocked.Contains(id);
+        public void RequestFriendApplyC2S(long id)=>FriendRequests.Add(id);
+        public void RequestFriendOpC2S(long id,string nick,int op,Action? done) { if(op==2) BlockRequests.Add(id); }
+    }
+    public class GameLogicManager { public AccountLogic account = new(); public FriendLogic friend=new(); }
 }
 public static class CharacterHandle { public static string GetCharacterNickName(int id) => "캐릭터"+id; public static string GetCharacterName(int id)=>"이름"+id; }
 namespace UI

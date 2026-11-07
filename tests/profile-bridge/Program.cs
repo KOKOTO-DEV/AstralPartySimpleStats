@@ -18,6 +18,8 @@ static class Program
         MonoSingletonProvider<NetManager>.inst = new NetManager();
         SimpleSingletonProvider<UI.UIManager>.inst = new UI.UIManager();
         RPCMsgManager.Requests.Clear();
+        ProfileBridge.BeginRoom(123);
+        ProfileBridge.SetParticipants("42,99,100,101");
         Rpc.GetShowPlayerS2C.OnGetShowPlayerS2CServerCallBackAsync = (model, error, dispatch) =>
         {
             if (error == 0) Account.Current.Id = model.ShowData.PlayerId;
@@ -36,9 +38,10 @@ static class Program
     }
     private static void Main()
     {
-        var tests = new Action[] { OwnQuery, Throttle, ManualWindow, Isolation, PrivateStats, Failure, Reset, HistoryOrder };
+        var tests = new Action[] { OwnQuery, Throttle, ManualWindow, Isolation, PrivateStats, Failure, Reset, HistoryOrder,
+            TenMinuteCache, OncePerRoom, CacheBound, ReconnectCache, AccountIsolation, LateDeparted, FriendActions };
         foreach (var test in tests) { Setup(); test(); Console.WriteLine("PASS bridge " + test.Method.Name); }
-        ProfileBridge.Stop(); Console.WriteLine("8/8 profile bridge regressions passed (mock game API).");
+        ProfileBridge.Stop(); Console.WriteLine("15/15 profile bridge regressions passed (mock game API).");
     }
     private static void OwnQuery()
     {
@@ -101,6 +104,79 @@ static class Program
         var rows=System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(parts[6])).Split('\n');
         Assert(parts[5]=="1" && rows.Length==10 && rows[0]=="PvP\t승\t캐릭터11\t이름11" && rows[9]=="PvE\t승\t캐릭터2\t이름2");
         Assert(rows[2].StartsWith("PvP\t2위\t"));
+    }
+    private static void TenMinuteCache()
+    {
+        ProfileBridge.Read(99); Reply(99); RPCMsgManager.Requests.Last().Result.keepWaiting=false;
+        Time.unscaledTime=600;
+        Assert(ProfileBridge.Read(99)!="" && RPCMsgManager.Requests.Count==1);
+        Time.unscaledTime=601;
+        Assert(ProfileBridge.Read(99)=="" && RPCMsgManager.Requests.Count==2);
+    }
+    private static void OncePerRoom()
+    {
+        ProfileBridge.Read(99); Reply(99,true,9); RPCMsgManager.Requests.Last().Result.keepWaiting=false;
+        Time.unscaledTime=1000;
+        ProfileBridge.Read(99); Assert(RPCMsgManager.Requests.Count==1);
+        ProfileBridge.BeginRoom(124);
+        ProfileBridge.SetParticipants("99");
+        ProfileBridge.Read(99); Assert(RPCMsgManager.Requests.Count==2);
+    }
+    private static void CacheBound()
+    {
+        ProfileBridge.SetParticipants("99,100,101,102");
+        for(var i=0;i<4;i++)
+        {
+            Time.unscaledTime=1+i*2; ProfileBridge.Read(99+i); Reply(99+i);
+            RPCMsgManager.Requests.Last().Result.keepWaiting=false;
+        }
+        var cache=(System.Collections.IDictionary)typeof(ProfileBridge).GetField("Cache",System.Reflection.BindingFlags.Static|System.Reflection.BindingFlags.NonPublic)!.GetValue(null)!;
+        Assert(cache.Count==4);
+        ProfileBridge.SetParticipants("99"); Assert(cache.Count==1);
+        Assert(ProfileBridge.Read(100)=="" && RPCMsgManager.Requests.Count==4);
+        ProfileBridge.BeginRoom(0); Assert(cache.Count==0);
+        ProfileBridge.BeginRoom(124); ProfileBridge.SetParticipants("99"); Time.unscaledTime=20;
+        Assert(ProfileBridge.Read(99)=="" && RPCMsgManager.Requests.Count==5);
+    }
+    private static void ReconnectCache()
+    {
+        ProfileBridge.Read(99); Reply(99); RPCMsgManager.Requests.Last().Result.keepWaiting=false;
+        var replacement=new NetManager();
+        replacement.RPC.GetShowPlayerS2C.OnGetShowPlayerS2CServerCallBackAsync=(m,e,d)=>Cysharp.Threading.Tasks.UniTask.CompletedTask;
+        MonoSingletonProvider<NetManager>.inst=replacement;
+        Time.unscaledTime=300;
+        Assert(ProfileBridge.Read(99)!="" && RPCMsgManager.Requests.Count==1);
+    }
+    private static void AccountIsolation()
+    {
+        ProfileBridge.Read(99); Reply(99); RPCMsgManager.Requests.Last().Result.keepWaiting=false;
+        Account.Id=43; Time.unscaledTime=3;
+        Assert(ProfileBridge.Read(99)=="" && RPCMsgManager.Requests.Count==2);
+    }
+    private static void LateDeparted()
+    {
+        ProfileBridge.Read(99); ProfileBridge.SetParticipants("100");
+        Reply(99); RPCMsgManager.Requests.Last().Result.keepWaiting=false;
+        var cache=(System.Collections.IDictionary)typeof(ProfileBridge).GetField("Cache",System.Reflection.BindingFlags.Static|System.Reflection.BindingFlags.NonPublic)!.GetValue(null)!;
+        Assert(cache.Count==0 && Account.Current.Id==0 && ProfileBridge.Read(99)=="");
+    }
+    private static void FriendActions()
+    {
+        var friend=SimpleSingletonProvider<GameLogicManager>.inst.friend;
+        Assert(ProfileBridge.ActionState(42)=="1" && ProfileBridge.ActionState(99)=="0");
+        ProfileBridge.RequestAction("friend|42"); ProfileBridge.RequestAction("block|9999");
+        Assert(friend.FriendRequests.Count==0 && friend.BlockRequests.Count==0);
+        ProfileBridge.RequestAction("friend|99"); ProfileBridge.RequestAction("friend|99");
+        Assert(friend.FriendRequests.SequenceEqual(new long[]{99}));
+        Time.unscaledTime=3; friend.Friends.Add(99);
+        Assert(ProfileBridge.ActionState(99)=="2");
+        ProfileBridge.RequestAction("friend|99"); Assert(friend.FriendRequests.Count==1);
+        ProfileBridge.RequestAction("block|100"); Assert(friend.BlockRequests.SequenceEqual(new long[]{100}));
+        Time.unscaledTime=5; friend.Blocked.Add(100);
+        Assert(ProfileBridge.ActionState(100)=="4");
+        ProfileBridge.RequestAction("block|100"); Assert(friend.BlockRequests.Count==1);
+        ProfileBridge.SetParticipants("99");
+        ProfileBridge.RequestAction("block|100"); Assert(friend.BlockRequests.Count==1);
     }
     private static void Reset()
     {
