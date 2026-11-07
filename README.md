@@ -42,6 +42,7 @@
 <img width="541" height="194" alt="image" src="https://github.com/user-attachments/assets/896d3515-fa87-48ee-a577-bd25eb89750b" /><br />
 비공개는 확인 불가가 아니라 비공개라고 나옵니다.<br />
 <br />
+<br />
 승률은 단순히 승리회수 / 전체 게임수를 나눈거라 대략적으로 이렇구나 정도로만 참고하시길 바랍니다.<br />
 <br />
 좋아요 지수는 전체 좋아요 수를 3으로 나눈 수치입니다.<br />
