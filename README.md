@@ -39,9 +39,9 @@
 <br />
 <img width="661" height="171" alt="Image" src="https://github.com/user-attachments/assets/c45acbf1-9180-41cf-acc2-6a9e18d05bf5" /><br />
 플러그인에서 직접 각각의 유저를 빠르게 조회하기 때문에 이 화면 상태면 잠깐만 기다리면 다시 조회합니다. <br />
+<br />
 <img width="541" height="194" alt="image" src="https://github.com/user-attachments/assets/896d3515-fa87-48ee-a577-bd25eb89750b" /><br />
 비공개는 확인 불가가 아니라 비공개라고 나옵니다.<br />
-<br />
 <br />
 승률은 단순히 승리회수 / 전체 게임수를 나눈거라 대략적으로 이렇구나 정도로만 참고하시길 바랍니다.<br />
 <br />
