@@ -40,7 +40,7 @@
 <img width="661" height="171" alt="Image" src="https://github.com/user-attachments/assets/c45acbf1-9180-41cf-acc2-6a9e18d05bf5" /><br />
 플러그인에서 직접 각각의 유저를 빠르게 조회하기 때문에 이 화면 상태면 잠깐만 기다리면 다시 조회합니다. <br />
 <br />
-<img width="541" height="194" alt="image" src="https://github.com/user-attachments/assets/896d3515-fa87-48ee-a577-bd25eb89750b" /><br />
+<img width="327" height="79" alt="image" src="https://github.com/user-attachments/assets/2f6734cf-aec3-4520-b408-834510f9abfd" /><br />
 비공개는 확인 불가가 아니라 비공개라고 나옵니다.<br />
 <br />
 승률은 단순히 승리회수 / 전체 게임수를 나눈거라 대략적으로 이렇구나 정도로만 참고하시길 바랍니다.<br />
@@ -51,9 +51,12 @@
 <br />
 <br />
 <img width="1098" height="335" alt="Image" src="https://github.com/user-attachments/assets/c18b4567-b66f-4657-9c35-84c04e12de10" /><br />
-v0.2.1<br />
+<img width="645" height="162" alt="image" src="https://github.com/user-attachments/assets/e69cdb84-f99a-4ed1-be68-1b37713d2c90" /><br />
+v0.3.0<br />
 상세보기의 협동 -> PvE로 변경<br />
 상세보기의 PvP 패배의 경우 2위~4위로 표기합니다.<br />
+친구 등록 / 유저 차단 버튼이 추가 되었습니다.<br />
+현재 방 유저만 10분동안 캐시하고, 참가자 퇴장 시 해당 캐시 삭제, 방 퇴장시에는 전체 삭제되게 하였습니다.<br />
 <br />
 v0.2.0<br />
 유저정보 최근 10회 승패 표시가 나오게 추가 되었습니다.<br />
