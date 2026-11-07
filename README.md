@@ -87,5 +87,3 @@ Windows x64 글로벌 Steam INT판과 BepInEx 6 Unity IL2CPP가 필요합니다.
 <br />
 ## 라이선스<br />
 MIT. <br />
-원본 저작권 고지는 LICENSE에 유지했습니다. 배포물에는 게임 DLL을 포함하지 않습니다.
-
