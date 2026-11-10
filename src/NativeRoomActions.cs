@@ -51,6 +51,10 @@ internal static class NativeRoomActions
 
         if (action == "kick")
         {
+            // Defense in depth: permission is checked again immediately before
+            // the game RPC, not solely when the profile button is rendered.
+            if (!RoomKickPolicy.AllowsPanel(NativeRoomNavigation.CurrentPanel()))
+                throw new InvalidOperationException("Removing players is disabled outside the room waiting panel.");
             if (targetId == selfId || Data.InvokeInt64(room, "get_MasterId") != selfId)
                 throw new UnauthorizedAccessException("Only the host may remove another player.");
             // Keep the already-working kick path unchanged: one Int64 player ID.

@@ -89,6 +89,10 @@ internal sealed class ProfileQueryAccess
     }
     public string RequestAction(long id,string action)
     {
+        // Enforce the screen restriction for both bundled and rebuilt bridges.
+        // Do not let a stale UI action kick after character selection begins.
+        if (action == "kick" && !RoomKickPolicy.AllowsPanel(NativeRoomNavigation.CurrentPanel()))
+            return string.Empty;
         if (_bridge==IntPtr.Zero) return string.Empty;
 #if ASTRAL_BUNDLED_BRIDGE
         if (action == "leave" || action == "kick")

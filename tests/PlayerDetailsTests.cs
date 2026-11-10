@@ -23,6 +23,7 @@ internal static class PlayerDetailsTests
         Case("PvP placements render separately while summary retains losses", Placements),
         Case("Mode filtering retains its own order counts ranks and numbering", ModeSeparation),
         Case("0.4.0 profile actions distinguish self, host and existing friend", ActionLayout),
+        Case("Character selection blocks kicking but preserves self-exit", SelectionKickDisabled),
         Case("Only explicit room exit/close button names and captions are eligible", ExitButtonNames),
         Case("Direct room exit chooses named protocol enum members", DirectExitEnum),
         Case("Automatic room leave confirmation accepts only a positive action", ExitConfirmLabels)
@@ -32,21 +33,44 @@ internal static class PlayerDetailsTests
     private static void Assert(bool value) { if (!value) throw new Exception("Player details assertion failed"); }
     private static void ActionLayout()
     {
-        var missing=ProfileActionLayout.FromState(-1);
+        var missing=ProfileActionLayout.FromState(-1, true);
         Assert(!missing.ShowLeave && !missing.ShowFriends && !missing.ShowKick);
-        var self=ProfileActionLayout.FromState(9);
+        var self=ProfileActionLayout.FromState(9, true);
         Assert(self.ShowLeave && self.IsHost && !self.ShowFriends && !self.ShowKick);
-        var visitor=ProfileActionLayout.FromState(0);
+        var visitor=ProfileActionLayout.FromState(0, true);
         Assert(!visitor.ShowLeave && visitor.ShowFriends && !visitor.ShowKick && visitor.CanRegister && visitor.CanBlock);
-        var friend=ProfileActionLayout.FromState(2);
+        var friend=ProfileActionLayout.FromState(2, true);
         Assert(friend.ShowFriends && !friend.CanRegister && friend.CanBlock);
-        var blocked=ProfileActionLayout.FromState(4);
+        var blocked=ProfileActionLayout.FromState(4, true);
         Assert(blocked.ShowFriends && !blocked.CanRegister && !blocked.CanBlock);
-        var host=ProfileActionLayout.FromState(8);
+        var host=ProfileActionLayout.FromState(8, true);
         Assert(host.ShowKick && host.CanRegister && host.CanBlock);
-        var hostFriend=ProfileActionLayout.FromState(10);
+        var hostFriend=ProfileActionLayout.FromState(10, true);
         Assert(hostFriend.ShowKick && !hostFriend.CanRegister);
     }
+    private static void SelectionKickDisabled()
+    {
+        Assert(RoomKickPolicy.AllowsScreen("방"));
+        Assert(!RoomKickPolicy.AllowsScreen("캐릭터 선택"));
+        Assert(!RoomKickPolicy.AllowsScreen(""));
+        Assert(RoomKickPolicy.AllowsPanel("RoomWaitPanel"));
+        Assert(!RoomKickPolicy.AllowsPanel("RoomHeroPanel"));
+        Assert(!RoomKickPolicy.AllowsPanel("RoomListPanel"));
+        Assert(!RoomKickPolicy.AllowsPanel(""));
+
+        var waitingHost = ProfileActionLayout.FromState(8, RoomKickPolicy.AllowsScreen("방"));
+        var choosingHost = ProfileActionLayout.FromState(8, RoomKickPolicy.AllowsScreen("캐릭터 선택"));
+        Assert(waitingHost.ShowKick && !choosingHost.ShowKick);
+        Assert(choosingHost.ShowFriends && choosingHost.CanRegister && choosingHost.CanBlock);
+        var waitingSelf = ProfileActionLayout.FromState(9, RoomKickPolicy.AllowsScreen("방"));
+        var choosingSelf = ProfileActionLayout.FromState(9, RoomKickPolicy.AllowsScreen("캐릭터 선택"));
+        Assert(waitingSelf.ShowLeave && choosingSelf.ShowLeave && choosingSelf.IsHost);
+        var nonHostSelf = ProfileActionLayout.FromState(1, false);
+        Assert(nonHostSelf.ShowLeave && !nonHostSelf.ShowKick);
+        var choosingHostFriend = ProfileActionLayout.FromState(10, false);
+        Assert(!choosingHostFriend.ShowKick && !choosingHostFriend.CanRegister);
+    }
+
     private static void DirectExitEnum()
     {
         var values = new[]

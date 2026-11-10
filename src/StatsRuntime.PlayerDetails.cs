@@ -221,7 +221,7 @@ internal static partial class StatsRuntime
         decoration.LineHeight=FairyGui.Get<float>(decoration.Text.Pointer,"get_textHeight")/3;
         try { decoration.ActionState=ProfileQuery.ActionState(details.PlayerId); }
         catch(Exception ex) { decoration.ActionState=-1; LogRuntimeWarning("friend-state",ex.Message); }
-        var actions = ProfileActionLayout.FromState(decoration.ActionState);
+        var actions = ProfileActionLayout.FromState(decoration.ActionState, RoomKickPolicy.AllowsScreen(_snapshot.ScreenPhase));
         decoration.FriendCaption.SetVisible(actions.ShowFriends);
         decoration.FriendButton.SetVisible(actions.ShowFriends);
         decoration.BlockButton.SetVisible(actions.ShowFriends);
@@ -363,7 +363,9 @@ internal static partial class StatsRuntime
             var toggle=false;
             if (hit != null)
             {
-                var actions = ProfileActionLayout.FromState(hit.ActionState);
+                var actions = ProfileActionLayout.FromState(hit.ActionState,
+                    RoomKickPolicy.AllowsScreen(_snapshot.ScreenPhase)
+                    && RoomKickPolicy.AllowsPanel(NativeRoomNavigation.CurrentPanel()));
                 if (actions.ShowLeave && ContainsPointer(hit.LeaveButton, out _))
                 {
                     LogDiagnostic("Room leave requested from self profile (0.4.0).");
