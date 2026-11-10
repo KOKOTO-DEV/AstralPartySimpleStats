@@ -8,11 +8,21 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
-  <Target Name="BuildProfileBridge" BeforeTargets="PrepareForBuild">
+  <!-- The shipped 0.3.0 patch contains a verified HybridCLR ProfileBridge.
+       Reuse it when raw game assemblies are unavailable, while allowing a
+       fresh 0.4.0 bridge build when raw references are supplied. -->
+  <PropertyGroup Condition="'$(AstralUseBundledBridge)' == 'true'">
+    <DefineConstants>$(DefineConstants);ASTRAL_BUNDLED_BRIDGE</DefineConstants>
+  </PropertyGroup>
+  <Target Name="BuildProfileBridge" BeforeTargets="PrepareForBuild" Condition="'$(AstralUseBundledBridge)' != 'true'">
     <MSBuild Projects="../bridge/ProfileBridge.csproj" Targets="Restore;Build"
              Properties="Configuration=$(Configuration);AstralRuntimeRefs=$(AstralRuntimeRefs)" />
   </Target>
-  <ItemGroup>
+  <ItemGroup Condition="'$(AstralUseBundledBridge)' == 'true'">
+    <EmbeddedResource Include="../bridge/prebuilt/AstralPartySimpleStats.ProfileBridge.dll"
+                      LogicalName="AstralPartySimpleStats.ProfileBridge.dll" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(AstralUseBundledBridge)' != 'true'">
     <EmbeddedResource Include="../bridge/bin/$(Configuration)/netstandard2.1/AstralPartySimpleStats.ProfileBridge.dll"
                       LogicalName="AstralPartySimpleStats.ProfileBridge.dll" />
   </ItemGroup>

@@ -33,7 +33,17 @@ namespace GameLogic
         public void RequestFriendApplyC2S(long id)=>FriendRequests.Add(id);
         public void RequestFriendOpC2S(long id,string nick,int op,Action? done) { if(op==2) BlockRequests.Add(id); }
     }
-    public class GameLogicManager { public AccountLogic account = new(); public FriendLogic friend=new(); }
+    public class RoomModel { public long Id=123, MasterId=42; }
+    public class RoomController
+    {
+        public RoomModel _LocalRoom = new();
+        public readonly List<long> Kicks = new();
+        public int Leaves;
+        public void RequestKickPlayerC2S(long id) => Kicks.Add(id);
+        public void RequestLeaveRoomC2S() => Leaves++;
+    }
+    public class RoomLogic { public RoomController roomController = new(); }
+    public class GameLogicManager { public AccountLogic account = new(); public FriendLogic friend=new(); public RoomLogic room=new(); }
 }
 public static class CharacterHandle { public static string GetCharacterNickName(int id) => "캐릭터"+id; public static string GetCharacterName(int id)=>"이름"+id; }
 namespace UI

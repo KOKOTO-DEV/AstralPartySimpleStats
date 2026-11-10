@@ -24,11 +24,23 @@ internal static partial class StatsRuntime
         public readonly FguiNode Right;
         public readonly FguiNode FriendButton;
         public readonly FguiNode BlockButton;
+        public readonly FguiNode KickButton;
+        public readonly FguiNode LeaveButton;
+        public readonly FguiNode FriendCaption;
+        private readonly FguiNode _measure;
         public int ActionState=-1;
         public bool Expanded;
         public bool CanExpand;
         public long PlayerId;
         public float HeaderHeight;
+        public float LineHeight;
+        public FguiNode Measure => _measure;
+        public void MeasureManner(string font, string manner)
+        {
+            _measure.SetTextStyle(font, 17, new Color32(245,248,255,255),
+                FguiAlign.Left, FguiVerticalAlign.Middle, true, FguiAutoSize.Both);
+            _measure.SetText(manner);
+        }
         public DetailLabel(IntPtr host)
         {
             Host = FguiNode.Retain(host);
@@ -50,10 +62,20 @@ internal static partial class StatsRuntime
                 Right = FguiNode.Text(200,140);
                 Container.AddChild(Left); Container.AddChild(Right);
                 Left.SetVisible(false); Right.SetVisible(false);
-                FriendButton=FguiNode.Text(106,22); BlockButton=FguiNode.Text(106,22);
+                FriendCaption=FguiNode.Text(44,22);
+                FriendCaption.SetTouchable(false);
+                FriendButton=FguiNode.Text(58,22); BlockButton=FguiNode.Text(58,22);
+                KickButton=FguiNode.Text(80,22); LeaveButton=FguiNode.Text(96,22);
+                _measure=FguiNode.Text(200,22);
                 FriendButton.SetTouchable(true); BlockButton.SetTouchable(true);
+                KickButton.SetTouchable(true); LeaveButton.SetTouchable(true);
+                _measure.SetTouchable(false); _measure.SetVisible(false);
+                Container.AddChild(FriendCaption);
                 Container.AddChild(FriendButton); Container.AddChild(BlockButton);
-                FriendButton.SetVisible(false); BlockButton.SetVisible(false);
+                Container.AddChild(KickButton); Container.AddChild(LeaveButton);
+                Container.AddChild(_measure);
+                FriendCaption.SetVisible(false); FriendButton.SetVisible(false);
+                BlockButton.SetVisible(false); KickButton.SetVisible(false); LeaveButton.SetVisible(false);
                 Host.AddChild(Container);
             }
             catch
@@ -64,6 +86,10 @@ internal static partial class StatsRuntime
                 try { Right?.Dispose(); } catch { }
                 try { FriendButton?.Dispose(); } catch { }
                 try { BlockButton?.Dispose(); } catch { }
+                try { KickButton?.Dispose(); } catch { }
+                try { LeaveButton?.Dispose(); } catch { }
+                try { FriendCaption?.Dispose(); } catch { }
+                try { _measure?.Dispose(); } catch { }
                 try { _background?.Dispose(); } catch { }
                 try { Container?.Dispose(); } catch { }
                 Host.ReleaseHandle();
@@ -78,6 +104,8 @@ internal static partial class StatsRuntime
                 Text.ReleaseHandle();
                 Left.ReleaseHandle(); Right.ReleaseHandle();
                 FriendButton.ReleaseHandle(); BlockButton.ReleaseHandle();
+                KickButton.ReleaseHandle(); LeaveButton.ReleaseHandle();
+                FriendCaption.ReleaseHandle(); _measure.ReleaseHandle();
                 _background.ReleaseHandle();
                 Host.ReleaseHandle();
             }
@@ -130,12 +158,16 @@ internal static partial class StatsRuntime
                 LogRuntimeWarning("player-details", "Player details unavailable: " + ex.GetType().Name + ": " + ex.Message);
             }
         }
-        var summary = _snapshot.ScreenPhase + "; rows=" + rows.Count + "; rendered=" + found.Count;
-        if (_detailsSummary != summary)
+        if (VerboseLogging)
         {
-            _detailsSummary = summary;
-            _log?.LogInfo("Player details: " + summary + ".");
+            var summary = _snapshot.ScreenPhase + "; rows=" + rows.Count + "; rendered=" + found.Count;
+            if (_detailsSummary != summary)
+            {
+                _detailsSummary = summary;
+                LogDiagnostic("Player details: " + summary + ".");
+            }
         }
+        else _detailsSummary = string.Empty;
         foreach (var key in new List<IntPtr>(DetailLabels.Keys))
         {
             if (found.Contains(key)) continue;
@@ -186,18 +218,72 @@ internal static partial class StatsRuntime
             FguiAlign.Left, FguiVerticalAlign.Middle, false, FguiAutoSize.Both);
         decoration.Text.SetText(details.Caption + "\n" + (details.Recent?.Summary ?? "최근: 확인 불가")
             + (decoration.CanExpand ? (decoration.Expanded ? " ▴" : " ▾") : string.Empty));
+        decoration.LineHeight=FairyGui.Get<float>(decoration.Text.Pointer,"get_textHeight")/3;
         try { decoration.ActionState=ProfileQuery.ActionState(details.PlayerId); }
         catch(Exception ex) { decoration.ActionState=-1; LogRuntimeWarning("friend-state",ex.Message); }
-        var showActions=decoration.ActionState>=0 && (decoration.ActionState&1)==0;
-        decoration.FriendButton.SetVisible(showActions); decoration.BlockButton.SetVisible(showActions);
-        if(showActions)
+        var actions = ProfileActionLayout.FromState(decoration.ActionState);
+        decoration.FriendCaption.SetVisible(actions.ShowFriends);
+        decoration.FriendButton.SetVisible(actions.ShowFriends);
+        decoration.BlockButton.SetVisible(actions.ShowFriends);
+        decoration.KickButton.SetVisible(actions.ShowKick);
+        decoration.LeaveButton.SetVisible(actions.ShowLeave);
+
+        var actionRight = 0f;
+        if (actions.ShowFriends || actions.ShowLeave)
         {
-            decoration.FriendButton.SetTextStyle(font,15,new Color32(140,215,255,255),FguiAlign.Left,FguiVerticalAlign.Middle,true,FguiAutoSize.Shrink);
-            decoration.BlockButton.SetTextStyle(font,15,new Color32(255,180,180,255),FguiAlign.Left,FguiVerticalAlign.Middle,true,FguiAutoSize.Shrink);
-            decoration.FriendButton.SetText((decoration.ActionState&2)!=0?"[친구 등록됨]":"[친구 등록]");
-            decoration.BlockButton.SetText((decoration.ActionState&4)!=0?"[차단됨]":"[유저 차단]");
-            var actionY=2+FairyGui.Get<float>(decoration.Text.Pointer,"get_textHeight")/3;
-            decoration.FriendButton.SetXY(104,actionY); decoration.BlockButton.SetXY(218,actionY);
+            // Measure the *actual game font* on the manner line. Do not rely on
+            // fixed offsets: "확인 불가" is wider than a numeric credit score.
+            var mannerLine = details.Caption[(details.Caption.IndexOf('\n') + 1)..];
+            decoration.MeasureManner(font, mannerLine);
+            var mannerWidth = FairyGui.Get<float>(decoration.Measure.Pointer, "get_textWidth");
+            // Leave is spaced a little farther from the manner score; friend actions retain their original gap.
+            var actionX = 6f + mannerWidth + (actions.ShowLeave ? 20f : 10f);
+            var actionY = 2f + decoration.LineHeight;
+            var actionHeight = Math.Max(16f, decoration.LineHeight - 2f);
+            if (actions.ShowLeave)
+            {
+                decoration.LeaveButton.SetTextStyle(font, 15, new Color32(255, 188, 157, 255),
+                    FguiAlign.Center, FguiVerticalAlign.Middle, true, FguiAutoSize.Shrink);
+                decoration.LeaveButton.SetText(actions.IsHost ? "[방 닫기]" : "[방 나가기]");
+                decoration.LeaveButton.SetSize(96, actionHeight);
+                decoration.LeaveButton.SetXY(actionX, actionY);
+                actionRight = actionX + 96;
+            }
+            else
+            {
+                decoration.FriendCaption.SetTextStyle(font, 15, new Color32(220, 229, 242, 255),
+                    FguiAlign.Left, FguiVerticalAlign.Middle, true, FguiAutoSize.Shrink);
+                decoration.FriendCaption.SetText("친구:");
+                decoration.FriendCaption.SetSize(43, actionHeight);
+                decoration.FriendCaption.SetXY(actionX, actionY);
+                actionX += 44;
+                decoration.FriendButton.SetTextStyle(font, 15,
+                    actions.CanRegister ? new Color32(140, 215, 255, 255) : new Color32(119, 128, 139, 255),
+                    FguiAlign.Center, FguiVerticalAlign.Middle, true, FguiAutoSize.Shrink);
+                decoration.FriendButton.SetText("[등록]");
+                decoration.FriendButton.SetTouchable(actions.CanRegister);
+                decoration.FriendButton.SetSize(58, actionHeight);
+                decoration.FriendButton.SetXY(actionX, actionY);
+                actionX += 61;
+                decoration.BlockButton.SetTextStyle(font, 15,
+                    actions.CanBlock ? new Color32(255, 180, 180, 255) : new Color32(119, 128, 139, 255),
+                    FguiAlign.Center, FguiVerticalAlign.Middle, true, FguiAutoSize.Shrink);
+                decoration.BlockButton.SetText("[차단]");
+                decoration.BlockButton.SetTouchable(actions.CanBlock);
+                decoration.BlockButton.SetSize(58, actionHeight);
+                decoration.BlockButton.SetXY(actionX, actionY);
+                actionX += 61;
+                if (actions.ShowKick)
+                {
+                    decoration.KickButton.SetTextStyle(font, 15, new Color32(255, 188, 157, 255),
+                        FguiAlign.Center, FguiVerticalAlign.Middle, true, FguiAutoSize.Shrink);
+                    decoration.KickButton.SetText("[내보내기]");
+                    decoration.KickButton.SetSize(80, actionHeight);
+                    decoration.KickButton.SetXY(actionX, actionY);
+                    actionX += 80;
+                }
+                actionRight = actionX;
+            }
         }
         // Keep the text left-aligned, measure its actual glyph width, and grow
         // the box to the left of a fixed right edge beside the card's chat icon.
@@ -209,7 +295,7 @@ internal static partial class StatsRuntime
         var width = FairyGui.Get<float>(ui, "get_width");
         var height = FairyGui.Get<float>(ui, "get_height");
         var boxWidth = Math.Min(width, Math.Max(64, (float)Math.Ceiling(FairyGui.Get<float>(decoration.Text.Pointer, "get_textWidth")) + 12));
-        if(showActions) boxWidth=Math.Max(boxWidth,330);
+        if (actionRight > 0) boxWidth = Math.Min(width, Math.Max(boxWidth, actionRight + 8));
         var boxHeight = Math.Max(68, (float)Math.Ceiling(FairyGui.Get<float>(decoration.Text.Pointer, "get_textHeight")) + 4);
         decoration.HeaderHeight = boxHeight;
         decoration.Left.SetVisible(decoration.Expanded); decoration.Right.SetVisible(decoration.Expanded);
@@ -217,8 +303,8 @@ internal static partial class StatsRuntime
         {
             foreach (var column in new[] { decoration.Left, decoration.Right })
                 column.SetTextStyle(font,17,new Color32(245,248,255,255),FguiAlign.Left,FguiVerticalAlign.Top,false,FguiAutoSize.Both);
-            decoration.Left.SetText("최신순 1~5\n"+details.Recent.Column(0,_useCharacterNames));
-            decoration.Right.SetText("6~10\n"+details.Recent.Column(5,_useCharacterNames));
+            decoration.Left.SetText("최신순 01~05\n"+details.Recent.Column(0,_useCharacterNames));
+            decoration.Right.SetText("06~10\n"+details.Recent.Column(5,_useCharacterNames));
             var leftWidth=FairyGui.Get<float>(decoration.Left.Pointer,"get_textWidth");
             var rightWidth=FairyGui.Get<float>(decoration.Right.Pointer,"get_textWidth");
             decoration.Left.SetXY(6,boxHeight+4); decoration.Right.SetXY(6+leftWidth+24,boxHeight+4);
@@ -275,24 +361,62 @@ internal static partial class StatsRuntime
                 if(!label.Container.IsDisposed && ContainsPointer(label.Container,out _)) {hit=label;break;}
             }
             var toggle=false;
-            if(hit!=null && hit.ActionState>=0 && (hit.ActionState&1)==0)
+            if (hit != null)
             {
-                if(ContainsPointer(hit.FriendButton,out _))
+                var actions = ProfileActionLayout.FromState(hit.ActionState);
+                if (actions.ShowLeave && ContainsPointer(hit.LeaveButton, out _))
                 {
-                    if((hit.ActionState&6)==0) ProfileQuery.RequestAction(hit.PlayerId,"friend");
-                    _nextDetailsAt=0;_nextRead=0;return;
+                    LogDiagnostic("Room leave requested from self profile (0.4.0).");
+                    try
+                    {
+                        var isHost = (hit.ActionState & 8) != 0;
+                        if (isHost)
+                        {
+                            // The host's direct RPC already closes the room and its panel.
+                            var called = ProfileQuery.RequestAction(hit.PlayerId, "leave");
+                            LogDiagnostic("Room leave API invoked: " + (called.Length == 0 ? "not dispatched" : called)
+                                + ". Awaiting game/server response.");
+                        }
+                        else
+                        {
+                            // Both waiting-room and character-selection screens
+                            // use the same verified native exit RPC. The game
+                            // has no leave button in its character-selection UI.
+                            // UI routing runs only after the room state clears.
+                            var called = NativeRoomLeaveFlow.Start(hit.PlayerId, _gameState.RoomId);
+                            LogDiagnostic("Room leave direct API initiated: " + called);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _log?.LogWarning("Room leave failed: " + ex.GetType().Name + ": " + ex.Message);
+                    }
+                    _nextDetailsAt = 0; _nextRead = 0; return;
                 }
-                if(ContainsPointer(hit.BlockButton,out _))
+                if (actions.ShowFriends)
                 {
-                    if((hit.ActionState&4)==0) ProfileQuery.RequestAction(hit.PlayerId,"block");
-                    _nextDetailsAt=0;_nextRead=0;return;
+                    if (ContainsPointer(hit.FriendButton, out _))
+                    {
+                        if (actions.CanRegister) ProfileQuery.RequestAction(hit.PlayerId, "friend");
+                        _nextDetailsAt = 0; _nextRead = 0; return;
+                    }
+                    if (ContainsPointer(hit.BlockButton, out _))
+                    {
+                        if (actions.CanBlock) ProfileQuery.RequestAction(hit.PlayerId, "block");
+                        _nextDetailsAt = 0; _nextRead = 0; return;
+                    }
+                    if (actions.ShowKick && ContainsPointer(hit.KickButton, out _))
+                    {
+                        ProfileQuery.RequestAction(hit.PlayerId, "kick");
+                        _nextDetailsAt = 0; _nextRead = 0; return;
+                    }
                 }
             }
             if(hit!=null && hit.CanExpand)
             {
                 var mouse=Input.mousePosition;
                 var local=FairyGui.Unbox<Vector2>(FairyGui.Call(hit.Container.Pointer,"GlobalToLocal",FairyGui.Vector2Type,new Vector2(mouse.x,Screen.height-mouse.y)));
-                toggle=local.y>=hit.HeaderHeight-25 && local.y<=hit.HeaderHeight;
+                toggle=local.y>=2+2*hit.LineHeight && local.y<2+3*hit.LineHeight;
             }
             foreach(var label in DetailLabels.Values)
                 label.Expanded=label==hit ? (toggle ? !label.Expanded : label.Expanded) : false;

@@ -9,6 +9,8 @@ internal sealed class ProfileQueryAccess
     private readonly NativeGameData _metadata = new();
     private IntPtr _bridge;
     private bool _loadAttempted;
+    private long _currentRoomId;
+    private long _currentRoomMasterId;
 
     public string Read(long playerId, string roomId)
     {
@@ -37,12 +39,17 @@ internal sealed class ProfileQueryAccess
         }
     }
 
-    public void SyncParticipants(string roomId, string ids)
+    public void SyncParticipants(string roomId, string ids, long roomMasterId)
     {
         LoadBridge();
         if (_bridge == IntPtr.Zero || !long.TryParse(roomId,out var room) || room<=0) return;
+        _currentRoomId = room;
+        _currentRoomMasterId = roomMasterId;
         FairyGui.CallStatic(_bridge,"BeginRoom","System.Int64",room);
         FairyGui.CallStaticObject(_bridge,"SetParticipants",FairyGui.String,FairyGui.InternString(ids));
+#if !ASTRAL_BUNDLED_BRIDGE
+        FairyGui.CallStatic(_bridge,"SetRoomMaster","System.Int64",roomMasterId);
+#endif
     }
 
     public void Shutdown()
@@ -51,10 +58,14 @@ internal sealed class ProfileQueryAccess
         _metadata.Clear();
         _bridge = IntPtr.Zero;
         _loadAttempted = false;
+        _currentRoomId = 0;
+        _currentRoomMasterId = 0;
     }
 
     public void EndRoom()
     {
+        _currentRoomId = 0;
+        _currentRoomMasterId = 0;
         if (_bridge != IntPtr.Zero) FairyGui.CallStatic(_bridge,"BeginRoom","System.Int64",0L);
     }
     public int ActionState(long id)
@@ -62,12 +73,36 @@ internal sealed class ProfileQueryAccess
         if(_bridge==IntPtr.Zero) return -1;
         var value=FairyGui.CallStatic(_bridge,"ActionState","System.Int64",id);
         var text=value==IntPtr.Zero?string.Empty:Il2CppInterop.Runtime.IL2CPP.Il2CppStringToManaged(value);
-        return int.TryParse(text,out var state)?state:-1;
+        if (!int.TryParse(text,out var state)) return -1;
+#if ASTRAL_BUNDLED_BRIDGE
+        // The 0.3.0 bridge provides self/friend/blacklist bits but not host.
+        // Read the host ID's self bit from the same bridge. Never infer host
+        // status from the order of participants.
+        if (_currentRoomMasterId > 0 && _currentRoomId > 0)
+        {
+            var hostValue = FairyGui.CallStatic(_bridge,"ActionState","System.Int64",_currentRoomMasterId);
+            var hostText = hostValue==IntPtr.Zero ? string.Empty : Il2CppInterop.Runtime.IL2CPP.Il2CppStringToManaged(hostValue);
+            if (int.TryParse(hostText,out var hostState) && (hostState & 1) != 0) state |= 8;
+        }
+#endif
+        return state;
     }
-    public void RequestAction(long id,string action)
+    public string RequestAction(long id,string action)
     {
-        if(_bridge!=IntPtr.Zero) FairyGui.CallStaticObject(_bridge,"RequestAction",FairyGui.String,
+        if (_bridge==IntPtr.Zero) return string.Empty;
+#if ASTRAL_BUNDLED_BRIDGE
+        if (action == "leave" || action == "kick")
+        {
+            var state = ActionState(id);
+            if (_currentRoomId <= 0 || state < 0) return string.Empty;
+            if (action == "leave" && (state & 1) == 0) return string.Empty;
+            if (action == "kick" && ((state & 8) == 0 || (state & 1) != 0)) return string.Empty;
+            return NativeRoomActions.Invoke(action, _currentRoomId, id);
+        }
+#endif
+        FairyGui.CallStaticObject(_bridge,"RequestAction",FairyGui.String,
             FairyGui.InternString(action+"|"+id.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+        return "ProfileBridge.RequestAction(" + action + ")";
     }
 }
 

@@ -29,7 +29,7 @@ public static class ProfileBridge
     private static readonly Dictionary<long, Entry> Cache = new Dictionary<long, Entry>();
     private static readonly HashSet<long> Active = new HashSet<long>();
     private static readonly HashSet<long> Attempted = new HashSet<long>();
-    private static long _roomId, _pendingRoom;
+    private static long _roomId, _pendingRoom, _roomMasterId;
     private const BindingFlags InstanceFields = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
     private static readonly FieldInfo? Queue = typeof(RPCMsgManager).GetField("_OnPushRPCMsg", InstanceFields);
     private static readonly PropertyInfo? CallAction = Queue?.FieldType.GetGenericArguments()[0].GetProperty("callAction", InstanceFields);
@@ -46,16 +46,32 @@ public static class ProfileBridge
     public static string ActionState(long id)
     {
         if (!Active.Contains(id) || !Ensure()) return string.Empty;
-        if (id == _accountId) return "1";
+        var hostFlag = _roomId != 0 && _roomMasterId == _accountId ? 8 : 0;
+        if (id == _accountId) return (1 | hostFlag).ToString(CultureInfo.InvariantCulture);
         var friend = SimpleSingletonProvider<GameLogicManager>.inst.friend;
-        return ((friend.IsFriend(id)?2:0) | (friend.IsBlack(id)?4:0)).ToString(CultureInfo.InvariantCulture);
+        return ((friend.IsFriend(id)?2:0) | (friend.IsBlack(id)?4:0) | hostFlag).ToString(CultureInfo.InvariantCulture);
     }
 
     public static void RequestAction(string command)
     {
         var parts=command.Split('|');
-        if(parts.Length!=2 || !long.TryParse(parts[1],out var id) || !Active.Contains(id) || !Ensure()
-            || id==_accountId || Time.unscaledTime<_nextAction) return;
+        if (parts.Length != 2 || !long.TryParse(parts[1], out var id) || !Active.Contains(id)
+            || !Ensure() || Time.unscaledTime < _nextAction) return;
+        if (parts[0] == "leave")
+        {
+            if (id != _accountId || _roomId <= 0) return;
+            if (RoomActions.Invoke("leave", _roomId, _accountId, id))
+                _nextAction = Time.unscaledTime + 2;
+            return;
+        }
+        if (parts[0] == "kick")
+        {
+            if (id == _accountId || _roomMasterId != _accountId || _roomId <= 0) return;
+            if (RoomActions.Invoke("kick", _roomId, _accountId, id))
+                _nextAction = Time.unscaledTime + 2;
+            return;
+        }
+        if (id == _accountId) return;
         var friend=SimpleSingletonProvider<GameLogicManager>.inst.friend;
         if(parts[0]=="friend" && !friend.IsFriend(id) && !friend.IsBlack(id))
         {
@@ -172,7 +188,14 @@ public static class ProfileBridge
     {
         if (_roomId == roomId) return;
         _roomId = roomId;
+        _roomMasterId = 0;
         Cache.Clear(); Attempted.Clear(); Active.Clear();
+    }
+
+    public static void SetRoomMaster(long masterId)
+    {
+        // Re-sent after BeginRoom so stale ownership cannot outlive a room swap.
+        _roomMasterId = _roomId > 0 && masterId > 0 ? masterId : 0;
     }
 
     public static void SetParticipants(string ids)
@@ -204,7 +227,7 @@ public static class ProfileBridge
     public static void Stop()
     {
         Detach();
-        _roomId = 0; _pendingRoom = 0;
+        _roomId = 0; _pendingRoom = 0; _roomMasterId = 0;
         _nextAction=0;
         Cache.Clear(); Active.Clear(); Attempted.Clear();
     }
@@ -215,9 +238,10 @@ public static class ProfileBridge
         var records = new List<ShowPlayerShortFight>(data.Record);
         records.Sort((a,b) => { var time = b.Time.CompareTo(a.Time); return time != 0 ? time : b.Index.CompareTo(a.Index); });
         var lines = new List<string>();
-        for (var i = 0; i < Math.Min(10, records.Count); i++)
+        for (var i = 0; i < Math.Min(10,records.Count); i++)
         {
             var r = records[i];
+            var pve = BattleConfig.IsPVE(r.MapType);
             string name;
             try { name = r.HeroId == 0 ? "미상" : CharacterHandle.GetCharacterNickName(r.HeroId); }
             catch { name = "캐릭터 " + r.HeroId.ToString(CultureInfo.InvariantCulture); }
@@ -226,7 +250,6 @@ public static class ProfileBridge
             try { realName = r.HeroId == 0 ? "미상" : CharacterHandle.GetCharacterName(r.HeroId); }
             catch { realName = name; }
             realName=(realName??name).Replace('\t',' ').Replace('\n',' ').Replace('\r',' ');
-            var pve = BattleConfig.IsPVE(r.MapType);
             var result = r.Rank == 1 ? "승" : !pve && r.Rank >= 2 && r.Rank <= 4
                 ? r.Rank.ToString(CultureInfo.InvariantCulture) + "위" : "패";
             lines.Add((pve ? "PvE" : "PvP") + "\t" + result + "\t" + name + "\t" + realName);

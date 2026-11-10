@@ -12,6 +12,8 @@ internal sealed class RecentHistory
     public string Summary => !Public ? "최근: 비공개" : Rows.Count == 0 ? "최근: 기록 없음"
         : "최근: " + string.Concat(Rows.Select(x => x.Split('\t')[1]=="승"?"승":"패")) + " (" + Rows.Count(x=>x.Split('\t')[1]=="승") + "/" + Rows.Count + ")";
     private RecentHistory(bool visible, string[] rows) { Public=visible; Rows=rows; }
+    public RecentHistory ForMode(string mode) => new RecentHistory(Public,Rows.Where(r=>r.Split('\t')[0]==mode).Take(10).ToArray());
+    public string ModeSummary(string mode) => mode+" "+ForMode(mode).Summary;
     public string Column(int start,bool useNames=false) => string.Join("\n", Rows.Skip(start).Take(5).Select((r,i) =>
     {
         var p=r.Split('\t');
@@ -23,7 +25,7 @@ internal sealed class RecentHistory
         if (visible!="1" || encoded.Length>32768) return null;
         try
         {
-            var rows=Encoding.UTF8.GetString(Convert.FromBase64String(encoded)).Split('\n',StringSplitOptions.RemoveEmptyEntries).Take(10).ToArray();
+            var rows=Encoding.UTF8.GetString(Convert.FromBase64String(encoded)).Split('\n',StringSplitOptions.RemoveEmptyEntries).Take(20).ToArray();
             if (rows.Any(r=>
             {
                 var p=r.Split('\t');

@@ -1,4 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net6.0</TargetFramework><Nullable>enable</Nullable><ImplicitUsings>enable</ImplicitUsings></PropertyGroup>
-  <ItemGroup><Compile Include="../../bridge/ProfileBridge.cs" Link="ProfileBridge.cs" /></ItemGroup>
+  <ItemGroup><Compile Include="../../bridge/ProfileBridge.cs" Link="ProfileBridge.cs" /><Compile Include="../../bridge/RoomActions.cs" Link="RoomActions.cs" /></ItemGroup>
 </Project>

@@ -20,11 +20,92 @@ internal static class PlayerDetailsTests
         Case("Zero games avoids division by zero and missing likes remain unknown", ZeroGames),
         Case("Mixed-mode recent history keeps order and five-row columns", RecentColumns),
         Case("Private and malformed recent history do not expose records", RecentPrivacy),
-        Case("PvP placements render separately while summary retains losses", Placements)
+        Case("PvP placements render separately while summary retains losses", Placements),
+        Case("Mode filtering retains its own order counts ranks and numbering", ModeSeparation),
+        Case("0.4.0 profile actions distinguish self, host and existing friend", ActionLayout),
+        Case("Only explicit room exit/close button names and captions are eligible", ExitButtonNames),
+        Case("Direct room exit chooses named protocol enum members", DirectExitEnum),
+        Case("Automatic room leave confirmation accepts only a positive action", ExitConfirmLabels)
     };
     private static (string, Func<Task>) Case(string name, Action action) =>
         (name, () => { action(); return Task.CompletedTask; });
     private static void Assert(bool value) { if (!value) throw new Exception("Player details assertion failed"); }
+    private static void ActionLayout()
+    {
+        var missing=ProfileActionLayout.FromState(-1);
+        Assert(!missing.ShowLeave && !missing.ShowFriends && !missing.ShowKick);
+        var self=ProfileActionLayout.FromState(9);
+        Assert(self.ShowLeave && self.IsHost && !self.ShowFriends && !self.ShowKick);
+        var visitor=ProfileActionLayout.FromState(0);
+        Assert(!visitor.ShowLeave && visitor.ShowFriends && !visitor.ShowKick && visitor.CanRegister && visitor.CanBlock);
+        var friend=ProfileActionLayout.FromState(2);
+        Assert(friend.ShowFriends && !friend.CanRegister && friend.CanBlock);
+        var blocked=ProfileActionLayout.FromState(4);
+        Assert(blocked.ShowFriends && !blocked.CanRegister && !blocked.CanBlock);
+        var host=ProfileActionLayout.FromState(8);
+        Assert(host.ShowKick && host.CanRegister && host.CanBlock);
+        var hostFriend=ProfileActionLayout.FromState(10);
+        Assert(hostFriend.ShowKick && !hostFriend.CanRegister);
+    }
+    private static void DirectExitEnum()
+    {
+        var values = new[]
+        {
+            new RoomExitEnumSelection.Value("NormalExit", 3),
+            new RoomExitEnumSelection.Value("ForceExit", 5),
+            new RoomExitEnumSelection.Value("CloseRoom", 8)
+        };
+        Assert(RoomExitEnumSelection.Choose(values, false).Number == 3);
+        Assert(RoomExitEnumSelection.Choose(values, true).Number == 8);
+        var force = new[]
+        {
+            new RoomExitEnumSelection.Value("NotForceExit", 2),
+            new RoomExitEnumSelection.Value("ForceExit", 4)
+        };
+        Assert(RoomExitEnumSelection.Choose(force, false).Number == 2);
+        Assert(RoomExitEnumSelection.Choose(force, true).Number == 4);
+        try
+        {
+            RoomExitEnumSelection.Choose(new[] { new RoomExitEnumSelection.Value("Unspecified", 0) }, false);
+            throw new Exception("Unspecified enum must be rejected");
+        }
+        catch (InvalidOperationException) { }
+    }
+
+    private static void ExitConfirmLabels()
+    {
+        Assert(RoomExitConfirmSelection.PositiveScore("btn_OK", "") > 0);
+        Assert(RoomExitConfirmSelection.PositiveScore("btn_confirm", "") > 0);
+        Assert(RoomExitConfirmSelection.PositiveScore("btn_yes", "확인") > 0);
+        Assert(RoomExitConfirmSelection.PositiveScore("btn_unknown", "确定") > 0);
+        Assert(RoomExitConfirmSelection.PositiveScore("btn_unknown", "はい") > 0);
+        Assert(RoomExitConfirmSelection.PositiveScore("btn1", "") > 0);
+        Assert(RoomExitConfirmSelection.PositiveScore("btn_enter", "") > 0);
+        Assert(RoomExitConfirmSelection.PositiveScore("button_sure", "") > 0);
+        Assert(RoomExitConfirmSelection.PositiveScore("btn_cancel", "취소") == 0);
+        Assert(RoomExitConfirmSelection.PositiveScore("btn_no", "No") == 0);
+        Assert(RoomExitConfirmSelection.PositiveScore("btn_left", "") == 0);
+        Assert(RoomExitConfirmSelection.PositiveScore("btn_kick", "") == 0);
+        Assert(RoomExitConfirmSelection.ExitContext("정말로 방에서 나가겠습니까?"));
+        Assert(RoomExitConfirmSelection.ExitContext("Leave room?"));
+        Assert(!RoomExitConfirmSelection.ExitContext("설정 저장하시겠습니까?"));
+    }
+
+    private static void ExitButtonNames()
+    {
+        Assert(RoomExitButtonNames.Score("btn_CloseRoom", "", true) > 0);
+        Assert(RoomExitButtonNames.Score("btn_ExitRoom", "", false) > 0);
+        Assert(RoomExitButtonNames.Score("button_LeaveRoom", "", false) > 0);
+        Assert(RoomExitButtonNames.Score("btn_anything", "방 닫기", true) > 0);
+        Assert(RoomExitButtonNames.Score("btn_anything", "방 나가기", false) > 0);
+        Assert(RoomExitButtonNames.Score("btn_anything", "Leave Room", false) > 0);
+        Assert(RoomExitButtonNames.Score("btn_Close", "", true) == 0);
+        Assert(RoomExitButtonNames.Score("btn_Back", "", false) == 0);
+        Assert(RoomExitButtonNames.Score("btn_KickPlayer", "", true) == 0);
+        Assert(RoomExitButtonNames.Score("btn_ClosePopup", "", true) == 0);
+        Assert(RoomExitButtonNames.Score("btn_exit", "", false) > 0);
+        Assert(RoomExitButtonNames.Score("btn_anything", "나가기", false) == 0);
+    }
     private static void Missing()
     {
         var d = new PlayerDetailsReader(new Data { HasProfile = false, HasCredit = false }).Read((IntPtr)1);
@@ -144,6 +225,18 @@ internal static class PlayerDetailsTests
         Assert(recent.Column(0).Contains("02. PvP 2위 페니") && recent.Column(0).Contains("03. PvP 3위 렌") && recent.Column(0).Contains("04. PvP 4위 파르낫"));
         Assert(recent.Column(0).Contains("05. PvE 패 알라나"));
         Assert(RecentHistory.Parse("1",Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes("PvE\t2위\t렌")))==null);
+    }
+    private static void ModeSeparation()
+    {
+        var text="PvP\t2위\t페니\nPvE\t승\t카이세이\nPvP\t승\t렌\nPvE\t패\t알라나";
+        var history=RecentHistory.Parse("1",Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(text)))!;
+        Assert(history.ForMode("PvE").Summary=="최근: 승패 (1/2)");
+        Assert(history.ModeSummary("PvP")=="PvP 최근: 패승 (1/2)");
+        Assert(history.ForMode("PvP").Column(0)=="01. PvP 2위 페니\n02. PvP 승 렌");
+        Assert(history.ForMode("PvE").Column(0)=="01. PvE 승 카이세이\n02. PvE 패 알라나");
+        Assert(RecentHistory.Parse("0","")!.ModeSummary("PvE")=="PvE 최근: 비공개");
+        var many=RecentHistory.Parse("1",Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(string.Join("\n",Enumerable.Repeat("PvE\t승\t렌",20)))))!;
+        Assert(many.ForMode("PvE").Rows.Count==10 && many.ForMode("PvP").Summary=="최근: 기록 없음");
     }
     private sealed class Data : IGameDataAccess
     {

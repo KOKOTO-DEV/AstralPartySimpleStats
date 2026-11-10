@@ -20,6 +20,7 @@ static class Program
         RPCMsgManager.Requests.Clear();
         ProfileBridge.BeginRoom(123);
         ProfileBridge.SetParticipants("42,99,100,101");
+        ProfileBridge.SetRoomMaster(42);
         Rpc.GetShowPlayerS2C.OnGetShowPlayerS2CServerCallBackAsync = (model, error, dispatch) =>
         {
             if (error == 0) Account.Current.Id = model.ShowData.PlayerId;
@@ -39,9 +40,9 @@ static class Program
     private static void Main()
     {
         var tests = new Action[] { OwnQuery, Throttle, ManualWindow, Isolation, PrivateStats, Failure, Reset, HistoryOrder,
-            TenMinuteCache, OncePerRoom, CacheBound, ReconnectCache, AccountIsolation, LateDeparted, FriendActions };
+            TenMinuteCache, OncePerRoom, CacheBound, ReconnectCache, AccountIsolation, LateDeparted, FriendActions, RoomActionsGuarded, RoomActionsOwnerChanges };
         foreach (var test in tests) { Setup(); test(); Console.WriteLine("PASS bridge " + test.Method.Name); }
-        ProfileBridge.Stop(); Console.WriteLine("15/15 profile bridge regressions passed (mock game API).");
+        ProfileBridge.Stop(); Console.WriteLine(tests.Length + "/" + tests.Length + " profile bridge regressions passed (mock game API).");
     }
     private static void OwnQuery()
     {
@@ -163,20 +164,55 @@ static class Program
     private static void FriendActions()
     {
         var friend=SimpleSingletonProvider<GameLogicManager>.inst.friend;
-        Assert(ProfileBridge.ActionState(42)=="1" && ProfileBridge.ActionState(99)=="0");
+        Assert(ProfileBridge.ActionState(42)=="9" && ProfileBridge.ActionState(99)=="8");
         ProfileBridge.RequestAction("friend|42"); ProfileBridge.RequestAction("block|9999");
         Assert(friend.FriendRequests.Count==0 && friend.BlockRequests.Count==0);
         ProfileBridge.RequestAction("friend|99"); ProfileBridge.RequestAction("friend|99");
         Assert(friend.FriendRequests.SequenceEqual(new long[]{99}));
         Time.unscaledTime=3; friend.Friends.Add(99);
-        Assert(ProfileBridge.ActionState(99)=="2");
+        Assert(ProfileBridge.ActionState(99)=="10");
         ProfileBridge.RequestAction("friend|99"); Assert(friend.FriendRequests.Count==1);
         ProfileBridge.RequestAction("block|100"); Assert(friend.BlockRequests.SequenceEqual(new long[]{100}));
         Time.unscaledTime=5; friend.Blocked.Add(100);
-        Assert(ProfileBridge.ActionState(100)=="4");
+        Assert(ProfileBridge.ActionState(100)=="12");
         ProfileBridge.RequestAction("block|100"); Assert(friend.BlockRequests.Count==1);
         ProfileBridge.SetParticipants("99");
         ProfileBridge.RequestAction("block|100"); Assert(friend.BlockRequests.Count==1);
+    }
+    private static void RoomActionsGuarded()
+    {
+        var room=SimpleSingletonProvider<GameLogicManager>.inst.room.roomController;
+        ProfileBridge.RequestAction("kick|42");
+        ProfileBridge.RequestAction("leave|99");
+        ProfileBridge.RequestAction("kick|9999");
+        Assert(room.Kicks.Count==0 && room.Leaves==0);
+        ProfileBridge.RequestAction("kick|99");
+        Assert(room.Kicks.SequenceEqual(new long[]{99}));
+        ProfileBridge.RequestAction("kick|100");
+        Assert(room.Kicks.Count==1); // shared action cooldown
+        Time.unscaledTime=3;
+        ProfileBridge.RequestAction("leave|42");
+        Assert(room.Leaves==1);
+        Time.unscaledTime=5;
+        room._LocalRoom.Id=321; // stale room after server transition
+        try { ProfileBridge.RequestAction("kick|100"); Assert(false); }
+        catch(InvalidOperationException) { }
+        Assert(room.Kicks.Count==1);
+    }
+    private static void RoomActionsOwnerChanges()
+    {
+        var room=SimpleSingletonProvider<GameLogicManager>.inst.room.roomController;
+        room._LocalRoom.MasterId=99;
+        ProfileBridge.RequestAction("kick|99");
+        Assert(room.Kicks.Count==0); // live ownership check, not just UI flag
+        ProfileBridge.SetRoomMaster(99);
+        Assert(ProfileBridge.ActionState(99)=="0" && ProfileBridge.ActionState(42)=="1");
+        ProfileBridge.RequestAction("kick|100");
+        Assert(room.Kicks.Count==0);
+        ProfileBridge.RequestAction("leave|42");
+        Assert(room.Leaves==1); // can always leave own room
+        ProfileBridge.BeginRoom(456);
+        Assert(ProfileBridge.ActionState(99)=="");
     }
     private static void Reset()
     {

@@ -1,0 +1,7 @@
+Source: User-supplied AstralPartySimpleStats-0.3.0.zip (compiled release).
+Entry: BepInEx/plugins/AstralPartySimpleStats/AstralPartySimpleStats.dll
+Extracted: embedded managed resource AstralPartySimpleStats.ProfileBridge.dll
+Length: 13,312 bytes
+SHA256: dc184ca4f57c5320c85bde84f12a5575951738ae2b74debec8e3bd13a6d526f4
+This bundled bridge implements 0.3.0 profile, friend and block logic.
+0.4.0 room actions use the main DLL native metadata fallback.
