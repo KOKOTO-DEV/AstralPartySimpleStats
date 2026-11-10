@@ -50,13 +50,14 @@
 대략 게임을 200판 했는데 좋아요 지수가 100도 안되면 복귀유저거나 아님 이상한 사람이거나 그렇겠죠.<br />
 <br />
 <br />
-<img width="1098" height="335" alt="Image" src="https://github.com/user-attachments/assets/c18b4567-b66f-4657-9c35-84c04e12de10" /><br />
+<img width="368" height="75" alt="image" src="https://github.com/user-attachments/assets/ad6cbbee-0c6b-4cd6-9512-39d4045e4f82" /><br />
 <img width="404" height="78" alt="image" src="https://github.com/user-attachments/assets/546a77eb-e3ed-472b-bcc9-84b19cce6f1f" /><br />
 v0.4.0<br/>
 방 닫기 버튼과 내보내기 버튼을 추가 하였습니다.<br />
 방 닫기와 내보내기는 확인 과정 없이 즉시 동작합니다.<br />
 그 외, 프로그램 로그 정리 및 빌드 구성을 약간 변경하였습니다.<br />
 <br />
+<img width="1098" height="335" alt="Image" src="https://github.com/user-attachments/assets/c18b4567-b66f-4657-9c35-84c04e12de10" /><br />
 v0.3.0<br />
 상세보기의 협동 -> PvE로 변경<br />
 상세보기의 PvP 패배의 경우 2위~4위로 표기합니다.<br />
